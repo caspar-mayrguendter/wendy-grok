@@ -5,6 +5,11 @@ logging:
     name: ./log/wendys-friends.log
   pattern:
     level: r=%X{r} ip=%X{ip} %5p
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      file-name-pattern: ./log/wendys-friends.%d{yyyy-MM-dd}.%i.log
 spring:
   application:
     name: wendys-family-tree

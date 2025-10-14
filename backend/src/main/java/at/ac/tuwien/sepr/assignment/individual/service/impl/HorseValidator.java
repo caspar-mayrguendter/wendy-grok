@@ -31,6 +31,22 @@ public class HorseValidator {
     LOG.trace("validateForCreate({})", horse);
     List<String> validationErrors = new ArrayList<>();
 
+    // Validate name (mandatory)
+    if (horse.name() == null || horse.name().isBlank()) {
+      validationErrors.add("Horse name is mandatory");
+    }
+
+    // Validate dateOfBirth (mandatory)
+    if (horse.dateOfBirth() == null) {
+      validationErrors.add("Horse birthdate is mandatory");
+    }
+
+    // Validate sex (mandatory)
+    if (horse.sex() == null) {
+      validationErrors.add("Horse gender is mandatory");
+    }
+
+    // Validate description (optional)
     if (horse.description() != null) {
       if (horse.description().isBlank()) {
         validationErrors.add("Horse description is given but blank");
@@ -39,8 +55,6 @@ public class HorseValidator {
         validationErrors.add("Horse description too long: longer than 4095 characters");
       }
     }
-
-    // TODO this is not complete…
 
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for create failed", validationErrors);

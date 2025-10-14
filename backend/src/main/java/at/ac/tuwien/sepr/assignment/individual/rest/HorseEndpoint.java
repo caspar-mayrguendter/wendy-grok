@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -82,6 +83,7 @@ public class HorseEndpoint {
    * @throws ConflictException if a conflict occurs while creating the horse
    */
   @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
   public HorseDetailDto create(
       @RequestBody HorseCreateDto toCreate
   ) throws ValidationException, ConflictException {

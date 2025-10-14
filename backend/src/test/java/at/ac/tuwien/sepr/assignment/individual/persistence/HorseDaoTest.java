@@ -3,7 +3,11 @@ package at.ac.tuwien.sepr.assignment.individual.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
+import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
+import at.ac.tuwien.sepr.assignment.individual.type.Sex;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,5 +35,68 @@ public class HorseDaoTest {
     assertThat(horses)
         .extracting(Horse::id, Horse::name)
         .contains(tuple(-1L, "Wendy"));
+  }
+
+  /**
+   * Tests that creating a horse with valid data works correctly.
+   */
+  @Test
+  public void createHorseWithValidData() {
+    HorseCreateDto horseToCreate = new HorseCreateDto(
+        "DAO Test Horse",
+        "Created via DAO",
+        LocalDate.of(2022, 7, 20),
+        Sex.MALE,
+        null
+    );
+
+    Horse createdHorse = horseDao.create(horseToCreate);
+
+    assertThat(createdHorse).isNotNull();
+    assertThat(createdHorse.id()).isNotNull();
+    assertThat(createdHorse.name()).isEqualTo("DAO Test Horse");
+    assertThat(createdHorse.description()).isEqualTo("Created via DAO");
+    assertThat(createdHorse.dateOfBirth()).isEqualTo(LocalDate.of(2022, 7, 20));
+    assertThat(createdHorse.sex()).isEqualTo(Sex.MALE);
+    assertThat(createdHorse.ownerId()).isNull();
+  }
+
+  /**
+   * Tests that getting a horse by ID returns the correct horse.
+   *
+   * @throws NotFoundException if the horse is not found
+   */
+  @Test
+  public void getByIdReturnsCorrectHorse() throws NotFoundException {
+    // Create a horse first to ensure we have one to retrieve
+    HorseCreateDto horseToCreate = new HorseCreateDto(
+        "GetById Test Horse",
+        null,
+        LocalDate.of(2023, 1, 15),
+        Sex.FEMALE,
+        null
+    );
+
+    Horse createdHorse = horseDao.create(horseToCreate);
+
+    // Now retrieve it by ID
+    Horse retrievedHorse = horseDao.getById(createdHorse.id());
+
+    assertThat(retrievedHorse).isNotNull();
+    assertThat(retrievedHorse.id()).isEqualTo(createdHorse.id());
+    assertThat(retrievedHorse.name()).isEqualTo("GetById Test Horse");
+    assertThat(retrievedHorse.description()).isNull();
+    assertThat(retrievedHorse.dateOfBirth()).isEqualTo(LocalDate.of(2023, 1, 15));
+    assertThat(retrievedHorse.sex()).isEqualTo(Sex.FEMALE);
+  }
+
+  /**
+   * Tests that getting a horse by nonexistent ID throws NotFoundException.
+   */
+  @Test
+  public void getByIdWithNonexistentIdThrowsNotFoundException() {
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseDao.getById(99999L))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessageContaining("No horse with ID 99999 found");
   }
 }
