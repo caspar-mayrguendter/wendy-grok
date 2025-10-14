@@ -3,6 +3,7 @@ package at.ac.tuwien.sepr.assignment.individual.service.impl;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.OwnerDto;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
@@ -51,21 +52,88 @@ public class HorseServiceImpl implements HorseService {
   }
 
   @Override
-  public Stream<HorseListDto> allHorses() {
-    LOG.trace("allHorses()");
+  public Stream<HorseListDto> searchHorses(HorseSearchDto searchParameters) {
+    LOG.trace("searchHorses({})", searchParameters);
     var horses = dao.getAll();
-    var ownerIds = horses.stream()
+
+    // Get all owners first to handle owner name filtering
+    var allOwnerIds = horses.stream()
         .map(Horse::ownerId)
         .filter(Objects::nonNull)
         .collect(Collectors.toUnmodifiableSet());
-    Map<Long, OwnerDto> ownerMap;
+    final Map<Long, OwnerDto> allOwnerMap;
     try {
-      ownerMap = ownerService.getAllById(ownerIds);
+      allOwnerMap = !allOwnerIds.isEmpty() ? ownerService.getAllById(allOwnerIds) : Map.of();
     } catch (NotFoundException e) {
       throw new FatalException("Horse, that is already persisted, refers to non-existing owner", e);
     }
-    return horses.stream()
-        .map(horse -> mapper.entityToListDto(horse, ownerMap));
+
+    // Apply search filters using AND logic and limit
+    final Integer limit = searchParameters.limit();
+    var filteredHorseList = horses.stream()
+        .filter(horse -> matchesSearchCriteria(horse, searchParameters, allOwnerMap))
+        .limit(limit != null && limit > 0 ? limit : Integer.MAX_VALUE)
+        .toList();
+    return filteredHorseList.stream()
+        .map(horse -> mapper.entityToListDto(horse, allOwnerMap));
+  }
+
+  /**
+   * Checks if a horse matches the given search criteria using AND logic.
+   * All non-null criteria must match for the horse to be included.
+   *
+   * @param horse the horse to check
+   * @param searchParameters the search criteria
+   * @param ownerMap map of owner IDs to owner DTOs
+   * @return true if the horse matches all criteria, false otherwise
+   */
+  private boolean matchesSearchCriteria(Horse horse, HorseSearchDto searchParameters, Map<Long, OwnerDto> ownerMap) {
+    // Name filter (case-insensitive partial match)
+    if (searchParameters.name() != null && !searchParameters.name().isBlank()) {
+      if (horse.name() == null
+          || !horse.name().toLowerCase().contains(searchParameters.name().toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Description filter (case-insensitive partial match)
+    if (searchParameters.description() != null && !searchParameters.description().isBlank()) {
+      if (horse.description() == null
+          || !horse.description().toLowerCase().contains(searchParameters.description().toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Born before filter (horse must be born before the given date)
+    if (searchParameters.bornBefore() != null) {
+      if (horse.dateOfBirth() == null || !horse.dateOfBirth().isBefore(searchParameters.bornBefore())) {
+        return false;
+      }
+    }
+
+    // Sex filter (exact match)
+    if (searchParameters.sex() != null) {
+      if (horse.sex() != searchParameters.sex()) {
+        return false;
+      }
+    }
+
+    // Owner name filter (case-insensitive partial match on owner's name)
+    if (searchParameters.ownerName() != null && !searchParameters.ownerName().isBlank()) {
+      if (horse.ownerId() == null) {
+        return false; // Horse has no owner, but we're searching for owner name
+      }
+      OwnerDto owner = ownerMap.get(horse.ownerId());
+      if (owner == null) {
+        return false; // Owner not found
+      }
+      String fullOwnerName = (owner.firstName() + " " + owner.lastName()).toLowerCase();
+      if (!fullOwnerName.contains(searchParameters.ownerName().toLowerCase())) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   @Override

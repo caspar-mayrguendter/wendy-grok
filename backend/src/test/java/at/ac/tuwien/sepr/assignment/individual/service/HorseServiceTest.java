@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
+import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
 import at.ac.tuwien.sepr.assignment.individual.type.Sex;
 import java.time.LocalDate;
@@ -31,7 +33,7 @@ public class HorseServiceTest {
    */
   @Test
   public void getAllReturnsAllStoredHorses() {
-    List<HorseListDto> horses = horseService.allHorses()
+    List<HorseListDto> horses = horseService.searchHorses(new HorseSearchDto(null, null, null, null, null, null))
         .toList();
 
     assertThat(horses.size()).isGreaterThanOrEqualTo(1); // TODO: Adapt to exact number of test data entries
@@ -238,5 +240,70 @@ public class HorseServiceTest {
     })
         .isInstanceOf(ValidationException.class)
         .hasMessageContaining("Mother and father cannot be the same horse");
+  }
+
+  /**
+   * Tests that searching with no criteria returns all horses.
+   */
+  @Test
+  public void searchWithNoCriteriaReturnsAllHorses() {
+    List<HorseListDto> horses = horseService.searchHorses(new HorseSearchDto(null, null, null, null, null, null))
+        .toList();
+
+    assertThat(horses.size()).isGreaterThanOrEqualTo(1);
+  }
+
+  /**
+   * Tests that searching by name returns correct results.
+   */
+  @Test
+  public void searchByNameReturnsMatchingHorses() throws ValidationException, ConflictException {
+    // First, create a horse with a specific name
+    HorseCreateDto horseDto = new HorseCreateDto(
+        "SearchTest Horse",
+        "A horse for search testing",
+        LocalDate.of(2020, 5, 15),
+        Sex.FEMALE,
+        null, null, null
+    );
+
+    HorseDetailDto createdHorse = horseService.create(horseDto);
+
+    // Search by partial name
+    List<HorseListDto> searchResults = horseService.searchHorses(new HorseSearchDto("Search", null, null, null, null, null))
+        .toList();
+
+    assertThat(searchResults)
+        .isNotEmpty()
+        .anyMatch(horse -> horse.id().equals(createdHorse.id()));
+  }
+
+  /**
+   * Tests that searching with non-matching criteria returns no results.
+   */
+  @Test
+  public void searchWithNonMatchingCriteriaReturnsEmpty() {
+    List<HorseListDto> searchResults = horseService.searchHorses(new HorseSearchDto("NonExistentHorseName12345", null, null, null, null, null))
+        .toList();
+
+    assertThat(searchResults).isEmpty();
+  }
+
+  /**
+   * Tests that searching by sex filters correctly.
+   */
+  @Test
+  public void searchBySexReturnsOnlyMatchingSex() {
+    List<HorseListDto> maleHorses = horseService.searchHorses(new HorseSearchDto(null, null, null, Sex.MALE, null, null))
+        .toList();
+
+    List<HorseListDto> femaleHorses = horseService.searchHorses(new HorseSearchDto(null, null, null, Sex.FEMALE, null, null))
+        .toList();
+
+    // All male horses should be male
+    maleHorses.forEach(horse -> assertThat(horse.sex()).isEqualTo(Sex.MALE));
+
+    // All female horses should be female
+    femaleHorses.forEach(horse -> assertThat(horse.sex()).isEqualTo(Sex.FEMALE));
   }
 }

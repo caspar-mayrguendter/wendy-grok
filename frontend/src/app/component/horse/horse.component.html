@@ -35,16 +35,15 @@
   </a>
 </div>
 
-<form class="d-flex flex-row w-auto mb-3" (submit)="reloadHorses()">
-  <button type="submit" hidden>submit</button>
-
+<form [formGroup]="searchForm" class="d-flex flex-row w-auto mb-3">
   <div class="flex-grow-2">
     <label for="searchHorseName" class="col-form-label">Name</label>
     <input
       type="text"
       id="searchHorseName"
-      name="searchHorseName"
-      class="form-control">
+      formControlName="name"
+      class="form-control"
+      placeholder="Search by name...">
   </div>
 
   <div class="flex-grow-1 ms-1">
@@ -52,18 +51,17 @@
     <input
       type="text"
       id="searchHorseDescription"
-      name="searchHorseDescription"
-      class="form-control">
+      formControlName="description"
+      class="form-control"
+      placeholder="Search by description...">
   </div>
 
   <div class="ms-1">
-    <label for="searchHorseDateOfBirth" class="col-form-label">Date of Birth</label>
+    <label for="searchHorseDateOfBirth" class="col-form-label">Born Before</label>
     <input
       type="date"
       id="searchHorseDateOfBirth"
-      name="searchHorseDateOfBirth"
-      pattern="\d{4}-\d{2}-\d{2}"
-      placeholder="yyyy-mm-dd"
+      formControlName="bornBefore"
       class="form-control">
   </div>
 
@@ -71,9 +69,9 @@
     <label for="searchHorseSex" class="col-form-label">Sex</label>
     <select
       id="searchHorseSex"
-      name="searchHorseSex"
+      formControlName="sex"
       class="form-select">
-      <option></option>
+      <option value="">All</option>
       <option value="FEMALE">Female</option>
       <option value="MALE">Male</option>
     </select>
@@ -81,12 +79,12 @@
 
   <div class="flex-grow-2 ms-1">
     <label for="searchHorseOwner" class="col-form-label">Owner</label>
-    <app-autocomplete
+    <input
+      type="text"
       id="searchHorseOwner"
-      name="searchHorseOwner"
-      textInputClass="form-control"
-      valueNeedsToMatchSuggestion="false">
-    </app-autocomplete>
+      formControlName="ownerName"
+      class="form-control"
+      placeholder="Search by owner name...">
   </div>
 </form>
 

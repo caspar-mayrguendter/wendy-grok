@@ -3,6 +3,7 @@ package at.ac.tuwien.sepr.assignment.individual.service;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
@@ -14,11 +15,13 @@ import java.util.stream.Stream;
  */
 public interface HorseService {
   /**
-   * Lists all horses stored in the system.
+   * Searches for horses based on the given search criteria.
+   * If no search criteria are provided, returns all horses.
    *
-   * @return list of all stored horses
+   * @param searchParameters the search criteria to filter horses
+   * @return stream of horses matching the search criteria
    */
-  Stream<HorseListDto> allHorses();
+  Stream<HorseListDto> searchHorses(HorseSearchDto searchParameters);
 
   /**
    * Creates a horse with the data given in {@code horse}

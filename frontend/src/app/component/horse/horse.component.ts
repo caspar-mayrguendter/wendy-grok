@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { AutocompleteComponent } from 'src/app/component/autocomplete/autocomplete.component';
 import { HorseService } from 'src/app/service/horse.service';
 import { Horse } from 'src/app/dto/horse';
@@ -14,38 +15,72 @@ import { ConfirmDeleteDialogComponent } from 'src/app/component/confirm-delete-d
   imports: [
     RouterLink,
     FormsModule,
+    ReactiveFormsModule,
     AutocompleteComponent,
     ConfirmDeleteDialogComponent
 ],
   styleUrls: ['./horse.component.scss']
 })
-export class HorseComponent implements OnInit {
+export class HorseComponent implements OnInit, OnDestroy {
   horses: Horse[] = [];
   bannerError: string | null = null;
   horseForDeletion: Horse | undefined;
+  searchForm: FormGroup;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private service: HorseService,
     private notification: ToastrService,
-  ) { }
+    private fb: FormBuilder
+  ) {
+    this.searchForm = this.fb.group({
+      name: [''],
+      description: [''],
+      bornBefore: [''],
+      sex: [''],
+      ownerName: ['']
+    });
+  }
 
   ngOnInit(): void {
     this.reloadHorses();
+
+    // Set up debounced search
+    this.searchForm.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.searchHorses();
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   reloadHorses() {
-    this.service.getAll()
+    this.searchHorses();
+  }
+
+  searchHorses() {
+    const searchParams = this.searchForm.value;
+    this.service.search(searchParams)
       .subscribe({
         next: data => {
           this.horses = data;
+          this.bannerError = null; // Clear any previous errors
         },
         error: error => {
-          console.error('Error fetching horses', error);
-          this.bannerError = 'Could not fetch horses: ' + error.message;
+          console.error('Error searching horses', error);
+          this.bannerError = 'Could not search horses: ' + error.message;
           const errorMessage = error.status === 0
             ? 'Is the backend up?'
             : error.message.message;
-          this.notification.error(errorMessage, 'Could Not Fetch Horses');
+          this.notification.error(errorMessage, 'Could Not Search Horses');
         }
       });
   }

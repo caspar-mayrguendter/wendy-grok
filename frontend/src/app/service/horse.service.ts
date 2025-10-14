@@ -16,12 +16,35 @@ export class HorseService {
   ) { }
 
   /**
-   * Get all horses stored in the system
+   * Search horses based on criteria
+   *
+   * @param searchParams optional search parameters
+   * @return observable list of found horses.
+   */
+  search(searchParams?: any): Observable<Horse[]> {
+    let params = new URLSearchParams();
+
+    if (searchParams) {
+      if (searchParams.name) params.set('name', searchParams.name);
+      if (searchParams.description) params.set('description', searchParams.description);
+      if (searchParams.bornBefore) params.set('bornBefore', searchParams.bornBefore);
+      if (searchParams.sex) params.set('sex', searchParams.sex);
+      if (searchParams.ownerName) params.set('ownerName', searchParams.ownerName);
+    }
+
+    const queryString = params.toString();
+    const url = queryString ? `${baseUri}?${queryString}` : baseUri;
+
+    return this.http.get<Horse[]>(url);
+  }
+
+  /**
+   * Get all horses stored in the system (legacy method)
    *
    * @return observable list of found horses.
    */
   getAll(): Observable<Horse[]> {
-    return this.http.get<Horse[]>(baseUri);
+    return this.search();
   }
 
   /**
