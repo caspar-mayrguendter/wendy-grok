@@ -190,4 +190,19 @@ public class HorseJdbcDao implements HorseDao {
         result.getObject("mother_id", Long.class),
         result.getObject("father_id", Long.class));
   }
+
+  private static final String SQL_DELETE = "DELETE FROM " + TABLE_NAME + " WHERE id = :id";
+
+  @Override
+  public void delete(long id) throws NotFoundException {
+    LOG.trace("delete({})", id);
+    getById(id); // Check if horse exists
+    int deleted = jdbcClient
+        .sql(SQL_DELETE)
+        .param("id", id)
+        .update();
+    if (deleted != 1) {
+      throw new FatalException("%d horses deleted, expected exactly 1".formatted(deleted));
+    }
+  }
 }

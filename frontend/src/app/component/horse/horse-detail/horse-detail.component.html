@@ -1,0 +1,124 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/horses">Horses</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            {{ horse?.name }} (Detail View)
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  @if (horse) {
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ horse.name }}</h2>
+            <div class="btn-group">
+              <a class="btn btn-warning" [routerLink]="['/horses', 'edit', horse.id]" aria-label="Edit horse">
+                <i class="bi bi-pencil"></i> Edit
+              </a>
+              <button class="btn btn-danger" (click)="horseForDeletion = horse"
+                      data-bs-toggle="modal" data-bs-target="#delete-dialog" aria-label="Delete horse">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle"></i>
+              This is a read-only view. Use the Edit button to modify the horse information.
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h4>Horse Information</h4>
+                <table class="table table-borderless">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Name:</th>
+                      <td>{{ horse.name }}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Description:</th>
+                      <td>{{ horse.description || 'No description' }}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Date of Birth:</th>
+                      <td>{{ dateOfBirthAsLocaleDate() }}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Sex:</th>
+                      <td>{{ sexAsString() }}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Owner:</th>
+                      <td>{{ ownerName() }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="col-md-6">
+                <h4>Family Information</h4>
+                <table class="table table-borderless">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Mother:</th>
+                      <td>
+                        @if (horse.mother) {
+                          <a [routerLink]="['/horses', 'detail', horse.mother.id]" class="text-decoration-none">
+                            {{ horse.mother.name }}
+                            <i class="bi bi-box-arrow-up-right ms-1"></i>
+                          </a>
+                        } @else {
+                          <span class="text-muted">No mother recorded</span>
+                        }
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Father:</th>
+                      <td>
+                        @if (horse.father) {
+                          <a [routerLink]="['/horses', 'detail', horse.father.id]" class="text-decoration-none">
+                            {{ horse.father.name }}
+                            <i class="bi bi-box-arrow-up-right ms-1"></i>
+                          </a>
+                        } @else {
+                          <span class="text-muted">No father recorded</span>
+                        }
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="row">
+      <div class="col-12">
+        <div class="alert alert-warning">
+          <h4>Loading...</h4>
+          <p>Loading horse details...</p>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<app-confirm-delete-dialog
+  id="delete-dialog"
+  [hidden]="!horseForDeletion"
+  [deleteWhat]="horseForDeletion?.name"
+  (confirm)="deleteHorse(horseForDeletion)">
+</app-confirm-delete-dialog>
