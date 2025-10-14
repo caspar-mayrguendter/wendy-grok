@@ -49,11 +49,13 @@ public class HorseMapper {
    *
    * @param horse   the horse entity to convert
    * @param owners  a map of horse owners by their ID
+   * @param parents a map of horse parents by their ID
    * @return the converted {@link HorseDetailDto}
    */
   public HorseDetailDto entityToDetailDto(
       Horse horse,
-      Map<Long, OwnerDto> owners) {
+      Map<Long, OwnerDto> owners,
+      Map<Long, HorseListDto> parents) {
     LOG.trace("entityToDto({})", horse);
     if (horse == null) {
       return null;
@@ -65,7 +67,9 @@ public class HorseMapper {
         horse.description(),
         horse.dateOfBirth(),
         horse.sex(),
-        getOwner(horse, owners)
+        getOwner(horse, owners),
+        getParent(horse.motherId(), parents),
+        getParent(horse.fatherId(), parents)
     );
   }
 
@@ -79,6 +83,17 @@ public class HorseMapper {
       owner = owners.get(ownerId);
     }
     return owner;
+  }
+
+  private HorseListDto getParent(Long parentId, Map<Long, HorseListDto> parents) {
+    HorseListDto parent = null;
+    if (parentId != null) {
+      if (!parents.containsKey(parentId)) {
+        throw new FatalException("Given parent map does not contain parent with ID %d".formatted(parentId));
+      }
+      parent = parents.get(parentId);
+    }
+    return parent;
   }
 
 }

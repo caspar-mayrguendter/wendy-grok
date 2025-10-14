@@ -87,6 +87,28 @@ export class HorseCreateEditComponent implements OnInit {
     ? of([])
     : this.ownerService.searchByName(input, 5);
 
+  motherSuggestions = (input: string) => {
+    if (input === '') {
+      // In edit mode, include current mother in suggestions if it exists
+      const currentMother = this.mode === HorseCreateEditMode.edit && this.horse.mother
+        ? [this.horse.mother]
+        : [];
+      return of(currentMother);
+    }
+    return this.service.searchByName(input, 5);
+  };
+
+  fatherSuggestions = (input: string) => {
+    if (input === '') {
+      // In edit mode, include current father in suggestions if it exists
+      const currentFather = this.mode === HorseCreateEditMode.edit && this.horse.father
+        ? [this.horse.father]
+        : [];
+      return of(currentFather);
+    }
+    return this.service.searchByName(input, 5);
+  };
+
   ngOnInit(): void {
     this.route.data.subscribe(data => {
       this.mode = data.mode;
@@ -124,6 +146,12 @@ export class HorseCreateEditComponent implements OnInit {
       : `${owner.firstName} ${owner.lastName}`;
   }
 
+  public formatParentName(parent: Horse | null | undefined): string {
+    return (parent == null)
+      ? ''
+      : parent.name;
+  }
+
 
   public onSubmit(form: NgForm): void {
     console.log('is form valid?', form.valid, this.horse);
@@ -154,7 +182,14 @@ export class HorseCreateEditComponent implements OnInit {
         },
         error: error => {
           console.error(`Error ${this.mode === HorseCreateEditMode.create ? 'creating' : 'updating'} horse`, error);
-          this.notification.error(`Could not ${this.mode === HorseCreateEditMode.create ? 'create' : 'update'} horse`, 'Error');
+
+          // Handle validation errors (422 status)
+          if (error.status === 422 && error.error && error.error.errors) {
+            const validationErrors = error.error.errors;
+            this.notification.error(`Validation failed: ${validationErrors.join(', ')}`, 'Validation Error');
+          } else {
+            this.notification.error(`Could not ${this.mode === HorseCreateEditMode.create ? 'create' : 'update'} horse`, 'Error');
+          }
         }
       });
     }

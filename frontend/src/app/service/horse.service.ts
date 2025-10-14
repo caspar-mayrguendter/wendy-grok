@@ -24,6 +24,23 @@ export class HorseService {
     return this.http.get<Horse[]>(baseUri);
   }
 
+  /**
+   * Search horses by name (for parent selection)
+   *
+   * @param name the name to search for
+   * @param limit maximum number of results (default 5)
+   * @return observable list of matching horses
+   */
+  searchByName(name: string, limit: number = 5): Observable<Horse[]> {
+    const params = new URLSearchParams();
+    if (name) {
+      params.set('name', name);
+    }
+    params.set('limit', limit.toString());
+
+    return this.http.get<Horse[]>(`${baseUri}?${params.toString()}`);
+  }
+
 
   /**
    * Create a new horse in the system.

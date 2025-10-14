@@ -53,7 +53,7 @@ public class HorseServiceTest {
         "A beautiful test horse",
         LocalDate.of(2020, 5, 15),
         Sex.MALE,
-        null // no owner
+        null, null, null // no owner, no parents
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -77,7 +77,7 @@ public class HorseServiceTest {
         "A beautiful test horse",
         LocalDate.of(2020, 5, 15),
         Sex.MALE,
-        null // no owner
+        null, null, null // no owner, no parents
     );
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.create(horseToCreate))
@@ -99,7 +99,7 @@ public class HorseServiceTest {
         "Original description",
         LocalDate.of(2020, 1, 1),
         Sex.MALE,
-        null
+        null, null, null
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -111,7 +111,7 @@ public class HorseServiceTest {
         "Updated description",
         LocalDate.of(2021, 6, 15),
         Sex.FEMALE,
-        null
+        null, null, null
     );
 
     HorseDetailDto updatedHorse = horseService.update(horseToUpdate);
@@ -138,7 +138,7 @@ public class HorseServiceTest {
         "Description",
         LocalDate.of(2020, 1, 1),
         Sex.MALE,
-        null
+        null, null, null
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -150,12 +150,93 @@ public class HorseServiceTest {
         "Updated description",
         LocalDate.of(2021, 6, 15),
         Sex.FEMALE,
-        null
+        null, null, null
     );
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.update(horseToUpdate))
         .isInstanceOf(ValidationException.class)
         .hasMessageContaining("Validation of horse for update failed")
         .hasMessageContaining("Horse name is mandatory");
+  }
+
+  /**
+   * Tests that creating a horse with valid parents works correctly.
+   *
+   * @throws Exception if the creation fails
+   */
+  @Test
+  public void createHorseWithValidParents() throws Exception {
+    // First create parent horses
+    HorseCreateDto motherDto = new HorseCreateDto(
+        "Mother Horse",
+        "A female parent horse",
+        LocalDate.of(2010, 1, 1),
+        Sex.FEMALE,
+        null, null, null
+    );
+    HorseDetailDto mother = horseService.create(motherDto);
+
+    HorseCreateDto fatherDto = new HorseCreateDto(
+        "Father Horse",
+        "A male parent horse",
+        LocalDate.of(2008, 1, 1),
+        Sex.MALE,
+        null, null, null
+    );
+    HorseDetailDto father = horseService.create(fatherDto);
+
+    // Now create a horse with these parents
+    HorseCreateDto horseToCreate = new HorseCreateDto(
+        "Child Horse",
+        "Horse with parents",
+        LocalDate.of(2022, 6, 15),
+        Sex.MALE,
+        null,
+        mother.id(),
+        father.id()
+    );
+
+    HorseDetailDto createdHorse = horseService.create(horseToCreate);
+
+    assertThat(createdHorse).isNotNull();
+    assertThat(createdHorse.name()).isEqualTo("Child Horse");
+    assertThat(createdHorse.mother()).isNotNull();
+    assertThat(createdHorse.mother().name()).isEqualTo("Mother Horse");
+    assertThat(createdHorse.father()).isNotNull();
+    assertThat(createdHorse.father().name()).isEqualTo("Father Horse");
+  }
+
+  /**
+   * Tests that creating a horse with invalid parents (same horse as mother and father) throws ValidationException.
+   */
+  @Test
+  public void createHorseWithInvalidParentsSameHorse() {
+    // Create a parent horse
+    HorseCreateDto parentDto = new HorseCreateDto(
+        "Parent Horse",
+        "A parent horse",
+        LocalDate.of(2010, 1, 1),
+        Sex.FEMALE,
+        null, null, null
+    );
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
+      HorseDetailDto parent = horseService.create(parentDto);
+
+      // Try to create a horse with the same horse as both mother and father
+      HorseCreateDto horseToCreate = new HorseCreateDto(
+          "Invalid Child",
+          "Horse with invalid parents",
+          LocalDate.of(2022, 6, 15),
+          Sex.MALE,
+          null,
+          parent.id(), // same ID for both
+          parent.id()
+      );
+
+      horseService.create(horseToCreate);
+    })
+        .isInstanceOf(ValidationException.class)
+        .hasMessageContaining("Mother and father cannot be the same horse");
   }
 }

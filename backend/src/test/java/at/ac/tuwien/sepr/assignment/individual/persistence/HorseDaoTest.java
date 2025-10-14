@@ -47,7 +47,7 @@ public class HorseDaoTest {
         "Created via DAO",
         LocalDate.of(2022, 7, 20),
         Sex.MALE,
-        null
+        null, null, null
     );
 
     Horse createdHorse = horseDao.create(horseToCreate);
@@ -74,7 +74,7 @@ public class HorseDaoTest {
         null,
         LocalDate.of(2023, 1, 15),
         Sex.FEMALE,
-        null
+        null, null, null
     );
 
     Horse createdHorse = horseDao.create(horseToCreate);

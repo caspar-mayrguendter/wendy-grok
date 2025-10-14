@@ -16,8 +16,10 @@ import at.ac.tuwien.sepr.assignment.individual.service.HorseService;
 import at.ac.tuwien.sepr.assignment.individual.service.OwnerService;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -76,18 +78,23 @@ public class HorseServiceImpl implements HorseService {
         horse
     );
     var ownerMap = ownerMapForSingleId(newHorse.ownerId());
+    var parentMap = parentMapForIds(newHorse.motherId(), newHorse.fatherId());
     return mapper.entityToDetailDto(
         newHorse,
-        ownerMap);
+        ownerMap,
+        parentMap);
   }
 
   @Override
   public HorseDetailDto getById(long id) throws NotFoundException {
     LOG.trace("details({})", id);
     Horse horse = dao.getById(id);
+    var ownerMap = ownerMapForSingleId(horse.ownerId());
+    var parentMap = parentMapForIds(horse.motherId(), horse.fatherId());
     return mapper.entityToDetailDto(
         horse,
-        ownerMapForSingleId(horse.ownerId()));
+        ownerMap,
+        parentMap);
   }
 
   @Override
@@ -98,9 +105,11 @@ public class HorseServiceImpl implements HorseService {
     validator.validateForUpdate(horse);
     var updatedHorse = dao.update(horse);
     var ownerMap = ownerMapForSingleId(updatedHorse.ownerId());
+    var parentMap = parentMapForIds(updatedHorse.motherId(), updatedHorse.fatherId());
     return mapper.entityToDetailDto(
         updatedHorse,
-        ownerMap);
+        ownerMap,
+        parentMap);
   }
 
   private Map<Long, OwnerDto> ownerMapForSingleId(Long ownerId) {
@@ -110,6 +119,35 @@ public class HorseServiceImpl implements HorseService {
           : Collections.singletonMap(ownerId, ownerService.getById(ownerId));
     } catch (NotFoundException e) {
       throw new FatalException("Owner %d referenced by horse not found".formatted(ownerId));
+    }
+  }
+
+  private Map<Long, HorseListDto> parentMapForIds(Long motherId, Long fatherId) {
+    try {
+      Set<Long> parentIds = Stream.of(motherId, fatherId)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toUnmodifiableSet());
+
+      if (parentIds.isEmpty()) {
+        return Collections.emptyMap();
+      }
+
+      // For now, we'll create basic HorseListDto objects from the parent IDs
+      // In a real implementation, you'd want to fetch the full horse data
+      Map<Long, HorseListDto> parentMap = new HashMap<>();
+      for (Long parentId : parentIds) {
+        try {
+          Horse parentHorse = dao.getById(parentId);
+          Map<Long, OwnerDto> ownerMap = ownerMapForSingleId(parentHorse.ownerId());
+          HorseListDto parentDto = mapper.entityToListDto(parentHorse, ownerMap != null ? ownerMap : Collections.emptyMap());
+          parentMap.put(parentId, parentDto);
+        } catch (NotFoundException e) {
+          throw new FatalException("Parent horse %d not found".formatted(parentId));
+        }
+      }
+      return parentMap;
+    } catch (Exception e) {
+      throw new FatalException("Error loading parent horses", e);
     }
   }
 

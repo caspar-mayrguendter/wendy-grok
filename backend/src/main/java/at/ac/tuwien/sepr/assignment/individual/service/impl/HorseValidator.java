@@ -3,7 +3,11 @@ package at.ac.tuwien.sepr.assignment.individual.service.impl;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
+import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
+import at.ac.tuwien.sepr.assignment.individual.persistence.HorseDao;
+import at.ac.tuwien.sepr.assignment.individual.type.Sex;
+import java.time.LocalDate;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +21,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class HorseValidator {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private final HorseDao horseDao;
+
+  public HorseValidator(HorseDao horseDao) {
+    this.horseDao = horseDao;
+  }
 
 
   /**
@@ -56,6 +65,9 @@ public class HorseValidator {
         validationErrors.add("Horse description too long: longer than 4095 characters");
       }
     }
+
+    // Validate parents
+    validateParents(null, horse.motherId(), horse.fatherId(), horse.dateOfBirth(), validationErrors);
 
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for create failed", validationErrors);
@@ -107,10 +119,68 @@ public class HorseValidator {
       }
     }
 
+    // Validate parents
+    validateParents(horse.id(), horse.motherId(), horse.fatherId(), horse.dateOfBirth(), validationErrors);
+
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for update failed", validationErrors);
     }
 
+  }
+
+  /**
+   * Validates parent assignments according to business rules.
+   *
+   * @param horseId the horse's own ID (can be null for new horses)
+   * @param motherId the mother horse ID (can be null)
+   * @param fatherId the father horse ID (can be null)
+   * @param horseBirthDate the horse's birth date
+   * @param validationErrors list to add validation errors to
+   */
+  private void validateParents(Long horseId, Long motherId, Long fatherId, LocalDate horseBirthDate, List<String> validationErrors) {
+    // Check that parents exist if specified and validate their properties
+    if (motherId != null) {
+      try {
+        var mother = horseDao.getById(motherId);
+        if (mother.sex() != Sex.FEMALE) {
+          validationErrors.add("Mother must be female");
+        }
+        // Check that horse is not its own mother
+        if (horseId != null && horseId.equals(motherId)) {
+          validationErrors.add("A horse cannot be its own mother");
+        }
+        // Check that mother is older than child
+        if (mother.dateOfBirth().isAfter(horseBirthDate) || mother.dateOfBirth().isEqual(horseBirthDate)) {
+          validationErrors.add("Mother must be born before the child");
+        }
+      } catch (NotFoundException e) {
+        validationErrors.add("Mother horse with ID " + motherId + " does not exist");
+      }
+    }
+
+    if (fatherId != null) {
+      try {
+        var father = horseDao.getById(fatherId);
+        if (father.sex() != Sex.MALE) {
+          validationErrors.add("Father must be male");
+        }
+        // Check that horse is not its own father
+        if (horseId != null && horseId.equals(fatherId)) {
+          validationErrors.add("A horse cannot be its own father");
+        }
+        // Check that father is older than child
+        if (father.dateOfBirth().isAfter(horseBirthDate) || father.dateOfBirth().isEqual(horseBirthDate)) {
+          validationErrors.add("Father must be born before the child");
+        }
+      } catch (NotFoundException e) {
+        validationErrors.add("Father horse with ID " + fatherId + " does not exist");
+      }
+    }
+
+    // Check that mother and father are different horses
+    if (motherId != null && fatherId != null && motherId.equals(fatherId)) {
+      validationErrors.add("Mother and father cannot be the same horse");
+    }
   }
 
 }
