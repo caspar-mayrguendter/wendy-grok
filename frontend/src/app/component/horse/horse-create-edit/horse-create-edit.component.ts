@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, of } from 'rxjs';
 import { AutocompleteComponent } from 'src/app/component/autocomplete/autocomplete.component';
-import { Horse, convertFromHorseToCreate } from 'src/app/dto/horse';
+import { Horse, convertFromHorseToCreate, convertFromHorseToUpdate } from 'src/app/dto/horse';
 import { Owner } from 'src/app/dto/owner';
 import { Sex } from 'src/app/dto/sex';
 import { HorseService } from 'src/app/service/horse.service';
@@ -49,6 +49,8 @@ export class HorseCreateEditComponent implements OnInit {
     switch (this.mode) {
       case HorseCreateEditMode.create:
         return 'Create New Horse';
+      case HorseCreateEditMode.edit:
+        return 'Edit Horse';
       default:
         return '?';
     }
@@ -58,6 +60,8 @@ export class HorseCreateEditComponent implements OnInit {
     switch (this.mode) {
       case HorseCreateEditMode.create:
         return 'Create';
+      case HorseCreateEditMode.edit:
+        return 'Update';
       default:
         return '?';
     }
@@ -72,6 +76,8 @@ export class HorseCreateEditComponent implements OnInit {
     switch (this.mode) {
       case HorseCreateEditMode.create:
         return 'created';
+      case HorseCreateEditMode.edit:
+        return 'updated';
       default:
         return '?';
     }
@@ -85,6 +91,25 @@ export class HorseCreateEditComponent implements OnInit {
     this.route.data.subscribe(data => {
       this.mode = data.mode;
     });
+
+    // Load horse data if in edit mode
+    if (this.mode === HorseCreateEditMode.edit) {
+      this.route.paramMap.subscribe(params => {
+        const id = params.get('id');
+        if (id) {
+          this.service.getById(+id).subscribe({
+            next: horse => {
+              this.horse = horse;
+            },
+            error: error => {
+              console.error('Error loading horse for edit', error);
+              this.notification.error('Could not load horse for editing', 'Error');
+              this.router.navigate(['/horses']);
+            }
+          });
+        }
+      });
+    }
   }
 
   public dynamicCssClassesForInput(input: NgModel): any {
@@ -113,6 +138,11 @@ export class HorseCreateEditComponent implements OnInit {
             convertFromHorseToCreate(this.horse)
           );
           break;
+        case HorseCreateEditMode.edit:
+          observable = this.service.update(
+            convertFromHorseToUpdate(this.horse)
+          );
+          break;
         default:
           console.error('Unknown HorseCreateEditMode', this.mode);
           return;
@@ -123,8 +153,8 @@ export class HorseCreateEditComponent implements OnInit {
           this.router.navigate(['/horses']);
         },
         error: error => {
-          console.error('Error creating horse', error);
-          // TODO show an error message to the user. Include and sensibly present the info from the backend!
+          console.error(`Error ${this.mode === HorseCreateEditMode.create ? 'creating' : 'updating'} horse`, error);
+          this.notification.error(`Could not ${this.mode === HorseCreateEditMode.create ? 'create' : 'update'} horse`, 'Error');
         }
       });
     }

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Horse, HorseCreate } from '../dto/horse';
+import { Horse, HorseCreate, HorseUpdate } from '../dto/horse';
 
 const baseUri = environment.backendUrl + '/horses';
 
@@ -35,6 +35,29 @@ export class HorseService {
   ): Observable<Horse> {
     return this.http.post<Horse>(
       baseUri,
+      horse
+    );
+  }
+
+  /**
+   * Get a horse by its ID.
+   *
+   * @param id the ID of the horse to retrieve
+   * @return an Observable for the horse
+   */
+  getById(id: number): Observable<Horse> {
+    return this.http.get<Horse>(`${baseUri}/${id}`);
+  }
+
+  /**
+   * Update an existing horse in the system.
+   *
+   * @param horse the data for the horse that should be updated
+   * @return an Observable for the updated horse
+   */
+  update(horse: HorseUpdate): Observable<Horse> {
+    return this.http.put<Horse>(
+      `${baseUri}/${horse.id}`,
       horse
     );
   }

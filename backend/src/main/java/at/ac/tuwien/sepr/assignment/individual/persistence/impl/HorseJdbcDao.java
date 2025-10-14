@@ -1,6 +1,7 @@
 package at.ac.tuwien.sepr.assignment.individual.persistence.impl;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
 import at.ac.tuwien.sepr.assignment.individual.exception.FatalException;
 import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
@@ -33,6 +34,14 @@ public class HorseJdbcDao implements HorseDao {
       "SELECT * FROM " + TABLE_NAME
               + " WHERE ID = :id";
 
+  private static final String SQL_UPDATE =
+      "UPDATE " + TABLE_NAME + " SET "
+          + "name = :name, "
+          + "description = :description, "
+          + "date_of_birth = :date_of_birth, "
+          + "sex = :sex, "
+          + "owner_id = :owner_id "
+          + "WHERE id = :id";
 
   // Note: The weird formatting below is related to how we generate the template. You can remove the literal concatenations.
   private static final String SQL_INSERT =
@@ -128,6 +137,35 @@ public class HorseJdbcDao implements HorseDao {
         horse.ownerId());
   }
 
+  @Override
+  public Horse update(HorseUpdateDto horse) throws NotFoundException {
+    LOG.trace("update({})", horse);
+
+    // First check if horse exists
+    getById(horse.id());
+
+    int updated = jdbcClient
+        .sql(SQL_UPDATE)
+        .param("name", horse.name())
+        .param("description", horse.description())
+        .param("date_of_birth", horse.dateOfBirth())
+        .param("sex", horse.sex().toString())
+        .param("owner_id", horse.ownerId())
+        .param("id", horse.id())
+        .update();
+
+    if (updated != 1) {
+      throw new FatalException("%d horses updated, expected exactly 1".formatted(updated));
+    }
+
+    return new Horse(
+        horse.id(),
+        horse.name(),
+        horse.description(),
+        horse.dateOfBirth(),
+        horse.sex(),
+        horse.ownerId());
+  }
 
   private Horse mapRow(ResultSet result, int rownum) throws SQLException {
     return new Horse(

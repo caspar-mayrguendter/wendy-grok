@@ -4,6 +4,7 @@ import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
@@ -17,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -92,6 +94,32 @@ public class HorseEndpoint {
     return service.create(
         toCreate
     );
+  }
+
+  /**
+   * Updates an existing horse entry in the system.
+   *
+   * @param id the ID of the horse to update
+   * @param toUpdate the horse data to be updated
+   * @return the updated horse details
+   * @throws ValidationException if the input data is invalid
+   * @throws ConflictException if a conflict occurs while updating the horse
+   * @throws NotFoundException if the horse with the given ID does not exist
+   */
+  @PutMapping("{id}")
+  public HorseDetailDto update(
+      @PathVariable("id") long id,
+      @RequestBody HorseUpdateDto toUpdate
+  ) throws ValidationException, ConflictException, NotFoundException {
+    LOG.info("PUT " + BASE_PATH + "/{}", id);
+    LOG.debug("Request body: {}", toUpdate);
+
+    // Ensure the ID in the path matches the ID in the body
+    if (!toUpdate.id().equals(id)) {
+      throw new ValidationException("ID mismatch between path and body", null);
+    }
+
+    return service.update(toUpdate);
   }
 
   /**

@@ -3,6 +3,7 @@ package at.ac.tuwien.sepr.assignment.individual.service.impl;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.OwnerDto;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
@@ -89,6 +90,18 @@ public class HorseServiceImpl implements HorseService {
         ownerMapForSingleId(horse.ownerId()));
   }
 
+  @Override
+  public HorseDetailDto update(
+      HorseUpdateDto horse
+  ) throws ValidationException, ConflictException, NotFoundException {
+    LOG.trace("update({})", horse);
+    validator.validateForUpdate(horse);
+    var updatedHorse = dao.update(horse);
+    var ownerMap = ownerMapForSingleId(updatedHorse.ownerId());
+    return mapper.entityToDetailDto(
+        updatedHorse,
+        ownerMap);
+  }
 
   private Map<Long, OwnerDto> ownerMapForSingleId(Long ownerId) {
     try {

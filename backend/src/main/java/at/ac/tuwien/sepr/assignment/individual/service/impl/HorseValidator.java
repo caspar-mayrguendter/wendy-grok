@@ -1,6 +1,7 @@
 package at.ac.tuwien.sepr.assignment.individual.service.impl;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
 import java.lang.invoke.MethodHandles;
@@ -58,6 +59,56 @@ public class HorseValidator {
 
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for create failed", validationErrors);
+    }
+
+  }
+
+  /**
+   * Validates a horse before update, ensuring all fields meet constraints and checking for conflicts.
+   * Similar to validateForCreate but allows for ID validation.
+   *
+   * @param horse the {@link HorseUpdateDto} to validate
+   * @throws ValidationException if validation fails
+   * @throws ConflictException   if conflicts with existing data are detected
+   */
+  public void validateForUpdate(
+       HorseUpdateDto horse
+  ) throws ValidationException, ConflictException {
+    LOG.trace("validateForUpdate({})", horse);
+    List<String> validationErrors = new ArrayList<>();
+
+    // Validate ID
+    if (horse.id() == null || horse.id() <= 0) {
+      validationErrors.add("Horse ID must be a positive number");
+    }
+
+    // Validate name (mandatory)
+    if (horse.name() == null || horse.name().isBlank()) {
+      validationErrors.add("Horse name is mandatory");
+    }
+
+    // Validate dateOfBirth (mandatory)
+    if (horse.dateOfBirth() == null) {
+      validationErrors.add("Horse birthdate is mandatory");
+    }
+
+    // Validate sex (mandatory)
+    if (horse.sex() == null) {
+      validationErrors.add("Horse gender is mandatory");
+    }
+
+    // Validate description (optional)
+    if (horse.description() != null) {
+      if (horse.description().isBlank()) {
+        validationErrors.add("Horse description is given but blank");
+      }
+      if (horse.description().length() > 4095) {
+        validationErrors.add("Horse description too long: longer than 4095 characters");
+      }
+    }
+
+    if (!validationErrors.isEmpty()) {
+      throw new ValidationException("Validation of horse for update failed", validationErrors);
     }
 
   }

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
 import at.ac.tuwien.sepr.assignment.individual.type.Sex;
 import java.time.LocalDate;
@@ -82,6 +83,79 @@ public class HorseServiceTest {
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.create(horseToCreate))
         .isInstanceOf(ValidationException.class)
         .hasMessageContaining("Validation of horse for create failed")
+        .hasMessageContaining("Horse name is mandatory");
+  }
+
+  /**
+   * Tests that updating a horse with valid data works correctly.
+   *
+   * @throws Exception if the update fails
+   */
+  @Test
+  public void updateHorseWithValidData() throws Exception {
+    // First create a horse
+    HorseCreateDto horseToCreate = new HorseCreateDto(
+        "Original Horse",
+        "Original description",
+        LocalDate.of(2020, 1, 1),
+        Sex.MALE,
+        null
+    );
+
+    HorseDetailDto createdHorse = horseService.create(horseToCreate);
+
+    // Now update the horse
+    HorseUpdateDto horseToUpdate = new HorseUpdateDto(
+        createdHorse.id(),
+        "Updated Horse Name",
+        "Updated description",
+        LocalDate.of(2021, 6, 15),
+        Sex.FEMALE,
+        null
+    );
+
+    HorseDetailDto updatedHorse = horseService.update(horseToUpdate);
+
+    assertThat(updatedHorse).isNotNull();
+    assertThat(updatedHorse.id()).isEqualTo(createdHorse.id());
+    assertThat(updatedHorse.name()).isEqualTo("Updated Horse Name");
+    assertThat(updatedHorse.description()).isEqualTo("Updated description");
+    assertThat(updatedHorse.dateOfBirth()).isEqualTo(LocalDate.of(2021, 6, 15));
+    assertThat(updatedHorse.sex()).isEqualTo(Sex.FEMALE);
+    assertThat(updatedHorse.owner()).isNull();
+  }
+
+  /**
+   * Tests that updating a horse with missing mandatory field (name) throws ValidationException.
+   *
+   * @throws Exception if the creation fails
+   */
+  @Test
+  public void updateHorseWithMissingNameThrowsValidationException() throws Exception {
+    // First create a horse
+    HorseCreateDto horseToCreate = new HorseCreateDto(
+        "Horse to Update",
+        "Description",
+        LocalDate.of(2020, 1, 1),
+        Sex.MALE,
+        null
+    );
+
+    HorseDetailDto createdHorse = horseService.create(horseToCreate);
+
+    // Now try to update with invalid data
+    HorseUpdateDto horseToUpdate = new HorseUpdateDto(
+        createdHorse.id(),
+        null, // missing name
+        "Updated description",
+        LocalDate.of(2021, 6, 15),
+        Sex.FEMALE,
+        null
+    );
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.update(horseToUpdate))
+        .isInstanceOf(ValidationException.class)
+        .hasMessageContaining("Validation of horse for update failed")
         .hasMessageContaining("Horse name is mandatory");
   }
 }

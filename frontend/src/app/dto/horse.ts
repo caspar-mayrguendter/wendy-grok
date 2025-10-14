@@ -23,8 +23,31 @@ export interface HorseCreate {
   ownerId?: number;
 }
 
+export interface HorseUpdate {
+  id: number;
+  name: string;
+  description?: string;
+  dateOfBirth: Date;
+  sex: Sex;
+  ownerId?: number;
+}
+
 export function convertFromHorseToCreate(horse: Horse): HorseCreate {
   return {
+    name: horse.name,
+    description: horse.description,
+    dateOfBirth: horse.dateOfBirth,
+    sex: horse.sex,
+    ownerId: horse.owner?.id,
+  };
+}
+
+export function convertFromHorseToUpdate(horse: Horse): HorseUpdate {
+  if (!horse.id) {
+    throw new Error('Horse must have an ID for update');
+  }
+  return {
+    id: horse.id,
     name: horse.name,
     description: horse.description,
     dateOfBirth: horse.dateOfBirth,

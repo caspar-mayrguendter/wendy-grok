@@ -3,6 +3,7 @@ package at.ac.tuwien.sepr.assignment.individual.service;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
@@ -42,4 +43,18 @@ public interface HorseService {
    * @throws NotFoundException if the horse with the given ID does not exist in the persistent data store
    */
   HorseDetailDto getById(long id) throws NotFoundException;
+
+  /**
+   * Updates a horse with the data given in {@code horse}
+   * in the persistent data store.
+   *
+   * @param horse the horse to update
+   * @return the updated horse
+   * @throws ValidationException if the horse could not be updated because the data given is in itself incorrect (description too long, no name, …)
+   * @throws ConflictException if the update data given for the horse is in conflict the data currently in the system (owner does not exist, …)
+   * @throws NotFoundException if the horse with the given ID does not exist in the persistent data store
+   */
+  HorseDetailDto update(
+      HorseUpdateDto horse
+  ) throws ValidationException, ConflictException, NotFoundException;
 }
