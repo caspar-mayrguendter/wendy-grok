@@ -93,7 +93,32 @@ public class OwnerServiceImpl implements OwnerService {
   @Override
   public OwnerDto create(OwnerCreateDto newOwner) throws ValidationException {
     LOG.trace("create({})", newOwner);
-    // TODO validation
+    validateForCreate(newOwner);
     return mapper.entityToDto(dao.create(newOwner));
+  }
+
+  /**
+   * Validates owner data before creation.
+   *
+   * @param owner the owner data to validate
+   * @throws ValidationException if validation fails
+   */
+  private void validateForCreate(OwnerCreateDto owner) throws ValidationException {
+    LOG.trace("validateForCreate({})", owner);
+    var validationErrors = new java.util.ArrayList<String>();
+
+    // Validate firstName (mandatory)
+    if (owner.firstName() == null || owner.firstName().isBlank()) {
+      validationErrors.add("Owner first name is mandatory");
+    }
+
+    // Validate lastName (mandatory)
+    if (owner.lastName() == null || owner.lastName().isBlank()) {
+      validationErrors.add("Owner last name is mandatory");
+    }
+
+    if (!validationErrors.isEmpty()) {
+      throw new ValidationException("Validation of owner for create failed", validationErrors);
+    }
   }
 }

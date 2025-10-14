@@ -1,0 +1,83 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/horses">Horses</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Create Owner
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="mb-0">Create New Owner</h2>
+        </div>
+
+        <div class="card-body">
+          <form #ownerForm="ngForm" (submit)="onSubmit(ownerForm)">
+            <div class="mb-3">
+              <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="firstName"
+                name="firstName"
+                [(ngModel)]="owner.firstName"
+                required
+                #firstNameModel="ngModel">
+              <div class="invalid-feedback" *ngIf="firstNameModel.invalid && firstNameModel.touched">
+                First name is required.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="lastName"
+                name="lastName"
+                [(ngModel)]="owner.lastName"
+                required
+                #lastNameModel="ngModel">
+              <div class="invalid-feedback" *ngIf="lastNameModel.invalid && lastNameModel.touched">
+                Last name is required.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email Address</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                [(ngModel)]="owner.email"
+                placeholder="Optional">
+              <div class="form-text">
+                Email address is optional.
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary" [disabled]="ownerForm.invalid">
+                <i class="bi bi-person-plus"></i> Create Owner
+              </button>
+              <a routerLink="/horses" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

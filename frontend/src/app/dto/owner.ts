@@ -4,3 +4,9 @@ export interface Owner {
   lastName: string;
   email?: string;
 }
+
+export interface OwnerCreate {
+  firstName: string;
+  lastName: string;
+  email?: string;
+}
