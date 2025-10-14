@@ -4,6 +4,7 @@ import {HorseComponent} from './component/horse/horse.component';
 import {HorseDetailComponent} from './component/horse/horse-detail/horse-detail.component';
 import {OwnerCreateComponent} from './component/owner/owner-create/owner-create.component';
 import {OwnerListComponent} from './component/owner/owner-list/owner-list.component';
+import {FamilyTreeComponent} from './component/family-tree/family-tree.component';
 
 export const routes: Routes = [
   {path: 'horses', children: [
@@ -11,6 +12,7 @@ export const routes: Routes = [
     {path: 'create', component: HorseCreateEditComponent, data: {mode: HorseCreateEditMode.create}},
     {path: 'edit/:id', component: HorseCreateEditComponent, data: {mode: HorseCreateEditMode.edit}},
     {path: 'detail/:id', component: HorseDetailComponent},
+    {path: 'family-tree/:id', component: FamilyTreeComponent},
   ]},
   {path: 'owners', children: [
     {path: '', component: OwnerListComponent},

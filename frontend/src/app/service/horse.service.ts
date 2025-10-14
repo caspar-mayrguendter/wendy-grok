@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
-import { Horse, HorseCreate, HorseUpdate } from '../dto/horse';
+import { Horse, HorseCreate, HorseUpdate, HorseFamilyTree } from '../dto/horse';
 
 const baseUri = environment.backendUrl + '/horses';
 
@@ -87,6 +87,17 @@ export class HorseService {
    */
   getById(id: number): Observable<Horse> {
     return this.http.get<Horse>(`${baseUri}/${id}`);
+  }
+
+  /**
+   * Get the family tree for a horse.
+   *
+   * @param id the ID of the horse
+   * @param maxGenerations maximum number of generations to include (default 5)
+   * @return an Observable for the family tree
+   */
+  getFamilyTree(id: number, maxGenerations: number = 5): Observable<HorseFamilyTree> {
+    return this.http.get<HorseFamilyTree>(`${baseUri}/${id}/family-tree?maxGenerations=${maxGenerations}`);
   }
 
   /**

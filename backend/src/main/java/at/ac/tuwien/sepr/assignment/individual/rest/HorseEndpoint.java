@@ -2,6 +2,7 @@ package at.ac.tuwien.sepr.assignment.individual.rest;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseFamilyTreeDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -72,6 +74,31 @@ public class HorseEndpoint {
     } catch (NotFoundException e) {
       HttpStatus status = HttpStatus.NOT_FOUND;
       logClientError(status, "Horse to get details of not found", e);
+      throw new ResponseStatusException(status, e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Retrieves the family tree of a horse by its ID.
+   *
+   * @param id the unique identifier of the horse
+   * @param maxGenerations the maximum number of generations to include (optional, default 5)
+   * @return the family tree of the requested horse
+   * @throws ResponseStatusException if the horse is not found or validation fails
+   */
+  @GetMapping("{id}/family-tree")
+  public HorseFamilyTreeDto getFamilyTree(@PathVariable("id") long id,
+                                          @RequestParam(defaultValue = "5") int maxGenerations) {
+    LOG.info("GET " + BASE_PATH + "/{}/family-tree?maxGenerations={}", id, maxGenerations);
+    try {
+      return service.getFamilyTree(id, maxGenerations);
+    } catch (NotFoundException e) {
+      HttpStatus status = HttpStatus.NOT_FOUND;
+      logClientError(status, "Horse to get family tree of not found", e);
+      throw new ResponseStatusException(status, e.getMessage(), e);
+    } catch (ValidationException e) {
+      HttpStatus status = HttpStatus.BAD_REQUEST;
+      logClientError(status, "Invalid parameters for family tree request", e);
       throw new ResponseStatusException(status, e.getMessage(), e);
     }
   }

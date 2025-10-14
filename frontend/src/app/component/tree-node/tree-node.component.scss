@@ -1,0 +1,116 @@
+.tree-node {
+  position: relative;
+  margin: 10px 0;
+  padding-left: 20px;
+  border-left: 2px solid #dee2e6;
+
+  &:last-child {
+    border-left-color: transparent;
+  }
+
+  .node-content {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 2px;
+      background: #dee2e6;
+    }
+  }
+
+  .horse-info {
+    flex: 1;
+
+    .horse-name {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2px;
+
+      .gender-symbol {
+        margin-left: 8px;
+        font-size: 1.2em;
+        color: #6c757d;
+      }
+    }
+
+    .horse-details {
+      font-size: 0.85em;
+    }
+  }
+
+  .node-actions {
+    display: flex;
+    gap: 2px;
+
+    .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+
+  .children-container {
+    margin-left: 30px;
+
+    &.expanded {
+      .children {
+        opacity: 1;
+        max-height: 1000px;
+        transition: all 0.3s ease;
+      }
+    }
+
+    .children {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+
+      &.expanded {
+        opacity: 1;
+        max-height: 1000px;
+      }
+    }
+  }
+
+  .toggle-btn {
+    padding: 0;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.85em;
+
+    &:hover {
+      color: #495057;
+    }
+
+    i {
+      margin-right: 5px;
+    }
+  }
+}
+
+// Root node styling
+.tree-node:first-child {
+  border-left: none;
+  padding-left: 0;
+
+  .node-content {
+    background: #e9ecef;
+    border-color: #adb5bd;
+
+    &::before {
+      display: none;
+    }
+  }
+}

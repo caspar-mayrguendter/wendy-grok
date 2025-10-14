@@ -66,3 +66,12 @@ export function convertFromHorseToUpdate(horse: Horse): HorseUpdate {
   };
 }
 
+export interface HorseFamilyTree {
+  id: number;
+  name: string;
+  dateOfBirth: string;
+  sex: string;
+  mother?: HorseFamilyTree;
+  father?: HorseFamilyTree;
+}
+

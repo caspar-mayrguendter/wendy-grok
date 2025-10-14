@@ -126,6 +126,11 @@
                 <i class="bi bi-pencil"></i>
               </a>
 
+              <a class="btn btn-sm btn-success" [routerLink]="['family-tree', horse.id]"
+                 aria-label="View family tree">
+                <i class="bi bi-diagram-3"></i>
+              </a>
+
               <button class="btn btn-sm responsive-danger-button" (click)="horseForDeletion = horse"
                       data-bs-toggle="modal" data-bs-target="#delete-dialog" aria-label="Delete horse">
                 <i class="bi bi-trash"></i>

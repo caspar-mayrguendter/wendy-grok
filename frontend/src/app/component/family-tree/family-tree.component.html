@@ -1,0 +1,47 @@
+<!-- SANITY CHECK BANNER
+    This is just for checking, that your setup works.
+    You can – and should – remove this later
+-->
+
+@if (loading) {
+  <div class="container mt-3">
+    <div class="alert alert-info" role="alert">
+      <h4>Loading...</h4>
+      <p>Loading family tree...</p>
+    </div>
+  </div>
+} @else if (treeRoot) {
+  <div class="container mt-3">
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading">Family Tree</h4>
+      <p>The pedigree tree shows the ancestors of {{ treeRoot.horse.name }}.</p>
+    </div>
+  </div>
+}
+
+@if (treeRoot) {
+  <div class="container mt-3">
+    <div class="d-flex flex-row align-items-center mb-3">
+      <h2 class="me-3">Pedigree of {{ treeRoot.horse.name }}</h2>
+      <div class="form-group">
+        <label for="maxGenerations" class="form-label me-2">Max Generations:</label>
+        <input
+          id="maxGenerations"
+          type="number"
+          class="form-control d-inline-block"
+          style="width: 80px;"
+          [(ngModel)]="maxGenerations"
+          (change)="onMaxGenerationsChange()"
+          min="1"
+          max="10">
+      </div>
+    </div>
+
+    <div class="family-tree-container">
+      <app-tree-node
+        [node]="treeRoot"
+        [component]="this">
+      </app-tree-node>
+    </div>
+  </div>
+}

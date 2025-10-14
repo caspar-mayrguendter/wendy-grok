@@ -21,6 +21,9 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="mb-0">{{ horse.name }}</h2>
             <div class="btn-group">
+              <a class="btn btn-success" [routerLink]="['/horses', 'family-tree', horse.id]" aria-label="View family tree">
+                <i class="bi bi-diagram-3"></i> Family Tree
+              </a>
               <a class="btn btn-warning" [routerLink]="['/horses', 'edit', horse.id]" aria-label="Edit horse">
                 <i class="bi bi-pencil"></i> Edit
               </a>

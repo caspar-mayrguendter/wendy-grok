@@ -2,6 +2,7 @@ package at.ac.tuwien.sepr.assignment.individual.service.impl;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseFamilyTreeDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
@@ -163,6 +164,71 @@ public class HorseServiceImpl implements HorseService {
         horse,
         ownerMap,
         parentMap);
+  }
+
+  @Override
+  public HorseFamilyTreeDto getFamilyTree(long id, int maxGenerations) throws NotFoundException, ValidationException {
+    LOG.trace("getFamilyTree({}, {})", id, maxGenerations);
+
+    // Validate maxGenerations parameter
+    if (maxGenerations < 1 || maxGenerations > 10) {
+      throw new ValidationException("Maximum generations must be between 1 and 10", null);
+    }
+
+    // Get the root horse
+    Horse rootHorse = dao.getById(id);
+
+    // Build the family tree recursively
+    return buildFamilyTreeNode(rootHorse, maxGenerations, 0);
+  }
+
+  /**
+   * Recursively builds a family tree node for the given horse.
+   * This method loads all ancestors up to the specified maximum generations.
+   *
+   * @param horse the horse to build the tree node for
+   * @param maxGenerations the maximum number of generations to include
+   * @param currentGeneration the current generation level (0 = root)
+   * @return the family tree node for the horse
+   */
+  private HorseFamilyTreeDto buildFamilyTreeNode(Horse horse, int maxGenerations, int currentGeneration) {
+    // Stop recursion if we've reached the maximum generations
+    if (currentGeneration >= maxGenerations) {
+      return null;
+    }
+
+    // Load mother recursively if it exists
+    HorseFamilyTreeDto mother = null;
+    if (horse.motherId() != null) {
+      try {
+        Horse motherHorse = dao.getById(horse.motherId());
+        mother = buildFamilyTreeNode(motherHorse, maxGenerations, currentGeneration + 1);
+      } catch (NotFoundException e) {
+        // If mother is not found, continue without it (shouldn't happen in a consistent DB)
+        LOG.warn("Mother horse {} not found for horse {}", horse.motherId(), horse.id());
+      }
+    }
+
+    // Load father recursively if it exists
+    HorseFamilyTreeDto father = null;
+    if (horse.fatherId() != null) {
+      try {
+        Horse fatherHorse = dao.getById(horse.fatherId());
+        father = buildFamilyTreeNode(fatherHorse, maxGenerations, currentGeneration + 1);
+      } catch (NotFoundException e) {
+        // If father is not found, continue without it (shouldn't happen in a consistent DB)
+        LOG.warn("Father horse {} not found for horse {}", horse.fatherId(), horse.id());
+      }
+    }
+
+    return new HorseFamilyTreeDto(
+        horse.id(),
+        horse.name(),
+        horse.dateOfBirth(),
+        horse.sex().toString(),
+        mother,
+        father
+    );
   }
 
   @Override

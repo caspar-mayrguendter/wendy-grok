@@ -2,6 +2,7 @@ package at.ac.tuwien.sepr.assignment.individual.service;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.HorseFamilyTreeDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
@@ -46,6 +47,18 @@ public interface HorseService {
    * @throws NotFoundException if the horse with the given ID does not exist in the persistent data store
    */
   HorseDetailDto getById(long id) throws NotFoundException;
+
+  /**
+   * Get the family tree for a horse with the given ID.
+   * This includes the horse and all its ancestors up to the specified maximum generations.
+   *
+   * @param id the ID of the horse to get the family tree for
+   * @param maxGenerations the maximum number of generations to include (1-10)
+   * @return the family tree of the horse
+   * @throws NotFoundException if the horse with the given ID does not exist in the persistent data store
+   * @throws ValidationException if maxGenerations is not between 1 and 10
+   */
+  HorseFamilyTreeDto getFamilyTree(long id, int maxGenerations) throws NotFoundException, ValidationException;
 
   /**
    * Updates a horse with the data given in {@code horse}

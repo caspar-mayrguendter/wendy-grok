@@ -1,0 +1,21 @@
+.family-tree-container {
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.form-group {
+  display: flex;
+  align-items: center;
+
+  label {
+    margin-bottom: 0;
+    margin-right: 10px;
+  }
+}
+
+h2 {
+  margin-bottom: 0;
+}

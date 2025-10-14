@@ -1,0 +1,62 @@
+<div class="tree-node">
+  <div class="node-content">
+    <div class="horse-info">
+      <div class="horse-name">
+        <strong>{{ node.horse.name }}</strong>
+        <span class="gender-symbol">{{ getHorseGenderSymbol() }}</span>
+      </div>
+      <div class="horse-details">
+        <small class="text-muted">
+          Born: {{ formatBirthDate() }}
+          @if (node.horse.owner) {
+            | Owner: {{ node.horse.owner.firstName }} {{ node.horse.owner.lastName }}
+          }
+        </small>
+      </div>
+    </div>
+
+    <div class="node-actions">
+      <button
+        class="btn btn-sm btn-outline-info me-1"
+        [routerLink]="['/horses', 'detail', node.horse.id]"
+        title="View Details">
+        <i class="bi bi-info-circle"></i>
+      </button>
+      <button
+        class="btn btn-sm btn-outline-warning me-1"
+        [routerLink]="['/horses', 'edit', node.horse.id]"
+        title="Edit Horse">
+        <i class="bi bi-pencil"></i>
+      </button>
+      <button
+        class="btn btn-sm btn-outline-danger"
+        (click)="deleteHorse()"
+        title="Delete Horse">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  @if (node.children && node.children.length > 0) {
+    <div class="children-container" [class.expanded]="node.expanded">
+      <button
+        class="btn btn-sm btn-link toggle-btn"
+        (click)="toggleNode()"
+        [attr.aria-expanded]="node.expanded">
+        <i class="bi" [class]="node.expanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i>
+        {{ node.expanded ? 'Collapse' : 'Expand' }} Ancestors
+      </button>
+
+      @if (node.expanded) {
+        <div class="children">
+          @for (child of node.children; track child.horse.id) {
+            <app-tree-node
+              [node]="child"
+              [component]="component">
+            </app-tree-node>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
