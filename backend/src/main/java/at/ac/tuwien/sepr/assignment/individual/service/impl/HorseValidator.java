@@ -2,6 +2,7 @@ package at.ac.tuwien.sepr.assignment.individual.service.impl;
 
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseCreateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
+import java.util.List;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
@@ -67,7 +68,7 @@ public class HorseValidator {
     }
 
     // Validate parents
-    validateParents(null, horse.motherId(), horse.fatherId(), horse.dateOfBirth(), validationErrors);
+    validateParents(null, horse.parentIds(), horse.dateOfBirth(), validationErrors);
 
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for create failed", validationErrors);
@@ -120,7 +121,7 @@ public class HorseValidator {
     }
 
     // Validate parents
-    validateParents(horse.id(), horse.motherId(), horse.fatherId(), horse.dateOfBirth(), validationErrors);
+    validateParents(horse.id(), horse.parentIds(), horse.dateOfBirth(), validationErrors);
 
     if (!validationErrors.isEmpty()) {
       throw new ValidationException("Validation of horse for update failed", validationErrors);
@@ -130,56 +131,70 @@ public class HorseValidator {
 
   /**
    * Validates parent assignments according to business rules.
+   * A horse can have up to 2 parents, and parents must have different genders.
    *
    * @param horseId the horse's own ID (can be null for new horses)
-   * @param motherId the mother horse ID (can be null)
-   * @param fatherId the father horse ID (can be null)
+   * @param parentIds the list of parent horse IDs (can be null or empty)
    * @param horseBirthDate the horse's birth date
    * @param validationErrors list to add validation errors to
    */
-  private void validateParents(Long horseId, Long motherId, Long fatherId, LocalDate horseBirthDate, List<String> validationErrors) {
-    // Check that parents exist if specified and validate their properties
-    if (motherId != null) {
+  private void validateParents(Long horseId, List<Long> parentIds, LocalDate horseBirthDate, List<String> validationErrors) {
+    if (parentIds == null || parentIds.isEmpty()) {
+      return; // No parents to validate
+    }
+
+    // Check that we don't have more than 2 parents
+    if (parentIds.size() > 2) {
+      validationErrors.add("A horse cannot have more than 2 parents");
+      return;
+    }
+
+    // Track parent sexes to ensure different genders
+    Sex parent1Sex = null;
+    Sex parent2Sex = null;
+
+    for (int i = 0; i < parentIds.size(); i++) {
+      Long parentId = parentIds.get(i);
+      if (parentId == null) {
+        validationErrors.add("Parent ID cannot be null");
+        continue;
+      }
+
       try {
-        var mother = horseDao.getById(motherId);
-        if (mother.sex() != Sex.FEMALE) {
-          validationErrors.add("Mother must be female");
+        var parent = horseDao.getById(parentId);
+
+        // Check that horse is not its own parent
+        if (horseId != null && horseId.equals(parentId)) {
+          validationErrors.add("A horse cannot be its own parent");
         }
-        // Check that horse is not its own mother
-        if (horseId != null && horseId.equals(motherId)) {
-          validationErrors.add("A horse cannot be its own mother");
+
+        // Check that parent is older than child
+        if (parent.dateOfBirth().isAfter(horseBirthDate) || parent.dateOfBirth().isEqual(horseBirthDate)) {
+          validationErrors.add("Parent must be born before the child");
         }
-        // Check that mother is older than child
-        if (mother.dateOfBirth().isAfter(horseBirthDate) || mother.dateOfBirth().isEqual(horseBirthDate)) {
-          validationErrors.add("Mother must be born before the child");
+
+        // Track parent sexes
+        if (i == 0) {
+          parent1Sex = parent.sex();
+        } else if (i == 1) {
+          parent2Sex = parent.sex();
         }
+
       } catch (NotFoundException e) {
-        validationErrors.add("Mother horse with ID " + motherId + " does not exist");
+        validationErrors.add("Parent horse with ID " + parentId + " does not exist");
       }
     }
 
-    if (fatherId != null) {
-      try {
-        var father = horseDao.getById(fatherId);
-        if (father.sex() != Sex.MALE) {
-          validationErrors.add("Father must be male");
-        }
-        // Check that horse is not its own father
-        if (horseId != null && horseId.equals(fatherId)) {
-          validationErrors.add("A horse cannot be its own father");
-        }
-        // Check that father is older than child
-        if (father.dateOfBirth().isAfter(horseBirthDate) || father.dateOfBirth().isEqual(horseBirthDate)) {
-          validationErrors.add("Father must be born before the child");
-        }
-      } catch (NotFoundException e) {
-        validationErrors.add("Father horse with ID " + fatherId + " does not exist");
+    // Check that parents have different genders (if we have 2 parents)
+    if (parentIds.size() == 2 && parent1Sex != null && parent2Sex != null) {
+      if (parent1Sex == parent2Sex) {
+        validationErrors.add("Parents must have different genders");
       }
     }
 
-    // Check that mother and father are different horses
-    if (motherId != null && fatherId != null && motherId.equals(fatherId)) {
-      validationErrors.add("Mother and father cannot be the same horse");
+    // Check for duplicate parent IDs
+    if (parentIds.size() == 2 && parentIds.get(0).equals(parentIds.get(1))) {
+      validationErrors.add("A horse cannot have the same horse as both parents");
     }
   }
 

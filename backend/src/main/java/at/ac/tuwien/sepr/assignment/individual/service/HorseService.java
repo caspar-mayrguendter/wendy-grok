@@ -75,6 +75,15 @@ public interface HorseService {
   ) throws ValidationException, ConflictException, NotFoundException;
 
   /**
+   * Searches for potential parent horses based on name, limiting results to 5 candidates.
+   * Used for parent selection when creating or updating horses.
+   *
+   * @param name the name to search for (partial match, case-insensitive)
+   * @return stream of up to 5 horses matching the name search
+   */
+  Stream<HorseListDto> searchParents(String name);
+
+  /**
    * Deletes the horse with the given ID from the persistent data store.
    *
    * @param id the ID of the horse to delete

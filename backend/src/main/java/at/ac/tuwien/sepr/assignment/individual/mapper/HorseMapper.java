@@ -3,6 +3,8 @@ package at.ac.tuwien.sepr.assignment.individual.mapper;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseDetailDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.OwnerDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.ParentDto;
+import java.util.List;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
 import at.ac.tuwien.sepr.assignment.individual.exception.FatalException;
 import java.lang.invoke.MethodHandles;
@@ -45,17 +47,18 @@ public class HorseMapper {
 
   /**
    * Converts a {@link Horse} entity into a {@link HorseDetailDto}.
-   * The given maps must contain the owners and parents referenced by the horse.
+   * The given maps must contain the owners referenced by the horse.
+   * The parents are provided as a list of ParentDto objects.
    *
    * @param horse   the horse entity to convert
    * @param owners  a map of horse owners by their ID
-   * @param parents a map of horse parents by their ID
+   * @param parents a list of parent DTOs for the horse
    * @return the converted {@link HorseDetailDto}
    */
   public HorseDetailDto entityToDetailDto(
       Horse horse,
       Map<Long, OwnerDto> owners,
-      Map<Long, HorseListDto> parents) {
+      List<ParentDto> parents) {
     LOG.trace("entityToDto({})", horse);
     if (horse == null) {
       return null;
@@ -68,8 +71,7 @@ public class HorseMapper {
         horse.dateOfBirth(),
         horse.sex(),
         getOwner(horse, owners),
-        getParent(horse.motherId(), parents),
-        getParent(horse.fatherId(), parents)
+        parents
     );
   }
 
@@ -85,15 +87,5 @@ public class HorseMapper {
     return owner;
   }
 
-  private HorseListDto getParent(Long parentId, Map<Long, HorseListDto> parents) {
-    HorseListDto parent = null;
-    if (parentId != null) {
-      if (!parents.containsKey(parentId)) {
-        throw new FatalException("Given parent map does not contain parent with ID %d".formatted(parentId));
-      }
-      parent = parents.get(parentId);
-    }
-    return parent;
-  }
 
 }

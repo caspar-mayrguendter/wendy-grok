@@ -40,9 +40,7 @@ public class HorseJdbcDao implements HorseDao {
           + "description = :description, "
           + "date_of_birth = :date_of_birth, "
           + "sex = :sex, "
-          + "owner_id = :owner_id, "
-          + "mother_id = :mother_id, "
-          + "father_id = :father_id "
+          + "owner_id = :owner_id "
           + "WHERE id = :id";
 
   // Note: The weird formatting below is related to how we generate the template. You can remove the literal concatenations.
@@ -52,9 +50,7 @@ public class HorseJdbcDao implements HorseDao {
        description,
        date_of_birth,
        sex,
-       owner_id,
-       mother_id,
-       father_id
+       owner_id
       """
       + """
           )
@@ -63,9 +59,7 @@ public class HorseJdbcDao implements HorseDao {
           :description,
           :date_of_birth,
           :sex,
-          :owner_id,
-          :mother_id,
-          :father_id)
+          :owner_id)
           """;
 
 
@@ -119,8 +113,6 @@ public class HorseJdbcDao implements HorseDao {
         .param("date_of_birth", horse.dateOfBirth())
         .param("sex", horse.sex().toString())
         .param("owner_id", horse.ownerId())
-        .param("mother_id", horse.motherId())
-        .param("father_id", horse.fatherId())
         .update(keyHolder);
 
     if (created != 1) {
@@ -140,9 +132,7 @@ public class HorseJdbcDao implements HorseDao {
         horse.description(),
         horse.dateOfBirth(),
         horse.sex(),
-        horse.ownerId(),
-        horse.motherId(),
-        horse.fatherId());
+        horse.ownerId());
   }
 
   @Override
@@ -159,8 +149,6 @@ public class HorseJdbcDao implements HorseDao {
         .param("date_of_birth", horse.dateOfBirth())
         .param("sex", horse.sex().toString())
         .param("owner_id", horse.ownerId())
-        .param("mother_id", horse.motherId())
-        .param("father_id", horse.fatherId())
         .param("id", horse.id())
         .update();
 
@@ -174,9 +162,7 @@ public class HorseJdbcDao implements HorseDao {
         horse.description(),
         horse.dateOfBirth(),
         horse.sex(),
-        horse.ownerId(),
-        horse.motherId(),
-        horse.fatherId());
+        horse.ownerId());
   }
 
   private Horse mapRow(ResultSet result, int rownum) throws SQLException {
@@ -186,9 +172,7 @@ public class HorseJdbcDao implements HorseDao {
         result.getString("description"),
         result.getDate("date_of_birth").toLocalDate(),
         Sex.valueOf(result.getString("sex")),
-        result.getObject("owner_id", Long.class),
-        result.getObject("mother_id", Long.class),
-        result.getObject("father_id", Long.class));
+        result.getObject("owner_id", Long.class));
   }
 
   private static final String SQL_DELETE = "DELETE FROM " + TABLE_NAME + " WHERE id = :id";

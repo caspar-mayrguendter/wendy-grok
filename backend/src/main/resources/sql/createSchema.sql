@@ -15,9 +15,15 @@ CREATE TABLE IF NOT EXISTS horse
   date_of_birth DATE NOT NULL,
   sex ENUM('MALE', 'FEMALE') NOT NULL,
   owner_id BIGINT,
-  mother_id BIGINT,
-  father_id BIGINT,
-  FOREIGN KEY (owner_id) REFERENCES owner(id),
-  FOREIGN KEY (mother_id) REFERENCES horse(id),
-  FOREIGN KEY (father_id) REFERENCES horse(id)
+  FOREIGN KEY (owner_id) REFERENCES owner(id)
+);
+
+CREATE TABLE IF NOT EXISTS horse_parent
+(
+  horse_id BIGINT NOT NULL,
+  parent_id BIGINT NOT NULL,
+  PRIMARY KEY (horse_id, parent_id),
+  FOREIGN KEY (horse_id) REFERENCES horse(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES horse(id),
+  CHECK (horse_id != parent_id)
 );

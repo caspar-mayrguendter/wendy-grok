@@ -55,7 +55,8 @@ public class HorseServiceTest {
         "A beautiful test horse",
         LocalDate.of(2020, 5, 15),
         Sex.MALE,
-        null, null, null // no owner, no parents
+        null, // no owner
+        List.of() // no parents
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -66,6 +67,7 @@ public class HorseServiceTest {
     assertThat(createdHorse.dateOfBirth()).isEqualTo(LocalDate.of(2020, 5, 15));
     assertThat(createdHorse.sex()).isEqualTo(Sex.MALE);
     assertThat(createdHorse.owner()).isNull();
+    assertThat(createdHorse.parents()).isEmpty();
     assertThat(createdHorse.id()).isNotNull();
   }
 
@@ -79,7 +81,8 @@ public class HorseServiceTest {
         "A beautiful test horse",
         LocalDate.of(2020, 5, 15),
         Sex.MALE,
-        null, null, null // no owner, no parents
+        null, // no owner
+        List.of() // no parents
     );
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.create(horseToCreate))
@@ -101,7 +104,8 @@ public class HorseServiceTest {
         "Original description",
         LocalDate.of(2020, 1, 1),
         Sex.MALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -113,7 +117,8 @@ public class HorseServiceTest {
         "Updated description",
         LocalDate.of(2021, 6, 15),
         Sex.FEMALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     HorseDetailDto updatedHorse = horseService.update(horseToUpdate);
@@ -140,7 +145,8 @@ public class HorseServiceTest {
         "Description",
         LocalDate.of(2020, 1, 1),
         Sex.MALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
@@ -152,7 +158,8 @@ public class HorseServiceTest {
         "Updated description",
         LocalDate.of(2021, 6, 15),
         Sex.FEMALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> horseService.update(horseToUpdate))
@@ -174,7 +181,8 @@ public class HorseServiceTest {
         "A female parent horse",
         LocalDate.of(2010, 1, 1),
         Sex.FEMALE,
-        null, null, null
+        null,
+        List.of()
     );
     HorseDetailDto mother = horseService.create(motherDto);
 
@@ -183,7 +191,8 @@ public class HorseServiceTest {
         "A male parent horse",
         LocalDate.of(2008, 1, 1),
         Sex.MALE,
-        null, null, null
+        null,
+        List.of()
     );
     HorseDetailDto father = horseService.create(fatherDto);
 
@@ -194,18 +203,19 @@ public class HorseServiceTest {
         LocalDate.of(2022, 6, 15),
         Sex.MALE,
         null,
-        mother.id(),
-        father.id()
+        List.of(mother.id(), father.id())
     );
 
     HorseDetailDto createdHorse = horseService.create(horseToCreate);
 
     assertThat(createdHorse).isNotNull();
     assertThat(createdHorse.name()).isEqualTo("Child Horse");
-    assertThat(createdHorse.mother()).isNotNull();
-    assertThat(createdHorse.mother().name()).isEqualTo("Mother Horse");
-    assertThat(createdHorse.father()).isNotNull();
-    assertThat(createdHorse.father().name()).isEqualTo("Father Horse");
+    assertThat(createdHorse.parents()).hasSize(2);
+    // Check that we have both mother and father
+    assertThat(createdHorse.parents())
+        .anyMatch(parent -> parent.relationship().equals("mother") && parent.horse().name().equals("Mother Horse"));
+    assertThat(createdHorse.parents())
+        .anyMatch(parent -> parent.relationship().equals("father") && parent.horse().name().equals("Father Horse"));
   }
 
   /**
@@ -219,27 +229,128 @@ public class HorseServiceTest {
         "A parent horse",
         LocalDate.of(2010, 1, 1),
         Sex.FEMALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
       HorseDetailDto parent = horseService.create(parentDto);
 
-      // Try to create a horse with the same horse as both mother and father
+      // Try to create a horse with the same horse as both parents
       HorseCreateDto horseToCreate = new HorseCreateDto(
           "Invalid Child",
           "Horse with invalid parents",
           LocalDate.of(2022, 6, 15),
           Sex.MALE,
           null,
-          parent.id(), // same ID for both
-          parent.id()
+          List.of(parent.id(), parent.id()) // same ID for both
       );
 
       horseService.create(horseToCreate);
     })
         .isInstanceOf(ValidationException.class)
-        .hasMessageContaining("Mother and father cannot be the same horse");
+        .hasMessageContaining("Validation of horse for create failed")
+        .hasMessageContaining("A horse cannot have the same horse as both parents");
+  }
+
+  /**
+   * Tests that creating a horse with parents of the same gender throws ValidationException.
+   */
+  @Test
+  public void createHorseWithInvalidParentsSameGender() {
+    // Create two parent horses of the same gender
+    HorseCreateDto parent1Dto = new HorseCreateDto(
+        "Parent 1",
+        "A female parent",
+        LocalDate.of(2010, 1, 1),
+        Sex.FEMALE,
+        null,
+        List.of()
+    );
+
+    HorseCreateDto parent2Dto = new HorseCreateDto(
+        "Parent 2",
+        "Another female parent",
+        LocalDate.of(2009, 1, 1),
+        Sex.FEMALE,
+        null,
+        List.of()
+    );
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
+      HorseDetailDto parent1 = horseService.create(parent1Dto);
+      HorseDetailDto parent2 = horseService.create(parent2Dto);
+
+      // Try to create a horse with two parents of the same gender
+      HorseCreateDto horseToCreate = new HorseCreateDto(
+          "Invalid Child",
+          "Horse with same gender parents",
+          LocalDate.of(2022, 6, 15),
+          Sex.MALE,
+          null,
+          List.of(parent1.id(), parent2.id())
+      );
+
+      horseService.create(horseToCreate);
+    })
+        .isInstanceOf(ValidationException.class)
+        .hasMessageContaining("Validation of horse for create failed")
+        .hasMessageContaining("Parents must have different genders");
+  }
+
+  /**
+   * Tests that creating a horse with more than 2 parents throws ValidationException.
+   */
+  @Test
+  public void createHorseWithTooManyParents() {
+    // Create three parent horses
+    HorseCreateDto parent1Dto = new HorseCreateDto(
+        "Parent 1",
+        "A female parent",
+        LocalDate.of(2010, 1, 1),
+        Sex.FEMALE,
+        null,
+        List.of()
+    );
+
+    HorseCreateDto parent2Dto = new HorseCreateDto(
+        "Parent 2",
+        "A male parent",
+        LocalDate.of(2009, 1, 1),
+        Sex.MALE,
+        null,
+        List.of()
+    );
+
+    HorseCreateDto parent3Dto = new HorseCreateDto(
+        "Parent 3",
+        "Another parent",
+        LocalDate.of(2008, 1, 1),
+        Sex.FEMALE,
+        null,
+        List.of()
+    );
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
+      HorseDetailDto parent1 = horseService.create(parent1Dto);
+      HorseDetailDto parent2 = horseService.create(parent2Dto);
+      HorseDetailDto parent3 = horseService.create(parent3Dto);
+
+      // Try to create a horse with three parents
+      HorseCreateDto horseToCreate = new HorseCreateDto(
+          "Invalid Child",
+          "Horse with too many parents",
+          LocalDate.of(2022, 6, 15),
+          Sex.MALE,
+          null,
+          List.of(parent1.id(), parent2.id(), parent3.id())
+      );
+
+      horseService.create(horseToCreate);
+    })
+        .isInstanceOf(ValidationException.class)
+        .hasMessageContaining("Validation of horse for create failed")
+        .hasMessageContaining("A horse cannot have more than 2 parents");
   }
 
   /**
@@ -264,7 +375,8 @@ public class HorseServiceTest {
         "A horse for search testing",
         LocalDate.of(2020, 5, 15),
         Sex.FEMALE,
-        null, null, null
+        null,
+        List.of()
     );
 
     HorseDetailDto createdHorse = horseService.create(horseDto);

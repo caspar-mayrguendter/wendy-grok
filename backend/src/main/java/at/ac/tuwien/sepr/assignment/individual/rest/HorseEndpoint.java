@@ -104,6 +104,18 @@ public class HorseEndpoint {
   }
 
   /**
+   * Searches for potential parent horses based on name.
+   *
+   * @param name the name to search for (partial match)
+   * @return a stream of up to 5 horses matching the name search
+   */
+  @GetMapping("/parents")
+  public Stream<HorseListDto> searchParents(@RequestParam String name) {
+    LOG.info("GET " + BASE_PATH + "/parents?name={}", name);
+    return service.searchParents(name);
+  }
+
+  /**
    * Creates a new horse entry in the system.
    *
    * @param toCreate the horse data to be created

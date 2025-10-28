@@ -7,6 +7,8 @@ import at.ac.tuwien.sepr.assignment.individual.dto.HorseListDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseSearchDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.HorseUpdateDto;
 import at.ac.tuwien.sepr.assignment.individual.dto.OwnerDto;
+import at.ac.tuwien.sepr.assignment.individual.dto.ParentDto;
+import at.ac.tuwien.sepr.assignment.individual.type.Sex;
 import at.ac.tuwien.sepr.assignment.individual.entity.Horse;
 import at.ac.tuwien.sepr.assignment.individual.exception.ConflictException;
 import at.ac.tuwien.sepr.assignment.individual.exception.FatalException;
@@ -14,11 +16,14 @@ import at.ac.tuwien.sepr.assignment.individual.exception.NotFoundException;
 import at.ac.tuwien.sepr.assignment.individual.exception.ValidationException;
 import at.ac.tuwien.sepr.assignment.individual.mapper.HorseMapper;
 import at.ac.tuwien.sepr.assignment.individual.persistence.HorseDao;
+import at.ac.tuwien.sepr.assignment.individual.persistence.ParentDao;
 import at.ac.tuwien.sepr.assignment.individual.service.HorseService;
 import at.ac.tuwien.sepr.assignment.individual.service.OwnerService;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -36,6 +41,7 @@ import org.springframework.stereotype.Service;
 public class HorseServiceImpl implements HorseService {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final HorseDao dao;
+  private final ParentDao parentDao;
   private final HorseMapper mapper;
   private final HorseValidator validator;
   private final OwnerService ownerService;
@@ -43,10 +49,12 @@ public class HorseServiceImpl implements HorseService {
 
   @Autowired
   public HorseServiceImpl(HorseDao dao,
+                          ParentDao parentDao,
                           HorseMapper mapper,
                           HorseValidator validator,
                           OwnerService ownerService) {
     this.dao = dao;
+    this.parentDao = parentDao;
     this.mapper = mapper;
     this.validator = validator;
     this.ownerService = ownerService;
@@ -143,15 +151,19 @@ public class HorseServiceImpl implements HorseService {
   ) throws ValidationException, ConflictException {
     LOG.trace("create({})", horse);
     validator.validateForCreate(horse);
-    var newHorse = dao.create(
-        horse
-    );
+    var newHorse = dao.create(horse);
+
+    // Set parent relationships if provided
+    if (horse.parentIds() != null && !horse.parentIds().isEmpty()) {
+      parentDao.setParents(newHorse.id(), horse.parentIds());
+    }
+
     var ownerMap = ownerMapForSingleId(newHorse.ownerId());
-    var parentMap = parentMapForIds(newHorse.motherId(), newHorse.fatherId());
+    var parentList = parentListForHorseId(newHorse.id());
     return mapper.entityToDetailDto(
         newHorse,
         ownerMap,
-        parentMap);
+        parentList);
   }
 
   @Override
@@ -159,11 +171,11 @@ public class HorseServiceImpl implements HorseService {
     LOG.trace("details({})", id);
     Horse horse = dao.getById(id);
     var ownerMap = ownerMapForSingleId(horse.ownerId());
-    var parentMap = parentMapForIds(horse.motherId(), horse.fatherId());
+    var parentList = parentListForHorseId(horse.id());
     return mapper.entityToDetailDto(
         horse,
         ownerMap,
-        parentMap);
+        parentList);
   }
 
   @Override
@@ -197,27 +209,26 @@ public class HorseServiceImpl implements HorseService {
       return null;
     }
 
-    // Load mother recursively if it exists
-    HorseFamilyTreeDto mother = null;
-    if (horse.motherId() != null) {
-      try {
-        Horse motherHorse = dao.getById(horse.motherId());
-        mother = buildFamilyTreeNode(motherHorse, maxGenerations, currentGeneration + 1);
-      } catch (NotFoundException e) {
-        // If mother is not found, continue without it (shouldn't happen in a consistent DB)
-        LOG.warn("Mother horse {} not found for horse {}", horse.motherId(), horse.id());
-      }
-    }
+    // Load parents recursively
+    var parentRelationships = parentDao.getParentsByHorseId(horse.id());
 
-    // Load father recursively if it exists
+    // Separate parents by sex (assuming at most one male and one female parent)
+    HorseFamilyTreeDto mother = null;
     HorseFamilyTreeDto father = null;
-    if (horse.fatherId() != null) {
+
+    for (var parentRel : parentRelationships) {
       try {
-        Horse fatherHorse = dao.getById(horse.fatherId());
-        father = buildFamilyTreeNode(fatherHorse, maxGenerations, currentGeneration + 1);
+        Horse parentHorse = dao.getById(parentRel.parentId());
+        var parentTreeNode = buildFamilyTreeNode(parentHorse, maxGenerations, currentGeneration + 1);
+
+        if (parentHorse.sex() == Sex.FEMALE) {
+          mother = parentTreeNode;
+        } else if (parentHorse.sex() == Sex.MALE) {
+          father = parentTreeNode;
+        }
       } catch (NotFoundException e) {
-        // If father is not found, continue without it (shouldn't happen in a consistent DB)
-        LOG.warn("Father horse {} not found for horse {}", horse.fatherId(), horse.id());
+        // If parent is not found, continue without it (shouldn't happen in a consistent DB)
+        LOG.warn("Parent horse {} not found for horse {}", parentRel.parentId(), horse.id());
       }
     }
 
@@ -238,12 +249,18 @@ public class HorseServiceImpl implements HorseService {
     LOG.trace("update({})", horse);
     validator.validateForUpdate(horse);
     var updatedHorse = dao.update(horse);
+
+    // Update parent relationships if provided
+    if (horse.parentIds() != null) {
+      parentDao.setParents(updatedHorse.id(), horse.parentIds());
+    }
+
     var ownerMap = ownerMapForSingleId(updatedHorse.ownerId());
-    var parentMap = parentMapForIds(updatedHorse.motherId(), updatedHorse.fatherId());
+    var parentList = parentListForHorseId(updatedHorse.id());
     return mapper.entityToDetailDto(
         updatedHorse,
         ownerMap,
-        parentMap);
+        parentList);
   }
 
   private Map<Long, OwnerDto> ownerMapForSingleId(Long ownerId) {
@@ -256,38 +273,75 @@ public class HorseServiceImpl implements HorseService {
     }
   }
 
-  private Map<Long, HorseListDto> parentMapForIds(Long motherId, Long fatherId) {
+  private List<ParentDto> parentListForHorseId(long horseId) {
     try {
-      Set<Long> parentIds = Stream.of(motherId, fatherId)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toUnmodifiableSet());
+      var parentRelationships = parentDao.getParentsByHorseId(horseId);
 
-      if (parentIds.isEmpty()) {
-        return Collections.emptyMap();
+      if (parentRelationships.isEmpty()) {
+        return Collections.emptyList();
       }
 
-      // For now, we'll create basic HorseListDto objects from the parent IDs
-      // In a real implementation, you'd want to fetch the full horse data
-      Map<Long, HorseListDto> parentMap = new HashMap<>();
-      for (Long parentId : parentIds) {
+      List<ParentDto> parentList = new ArrayList<>();
+      for (var parentRel : parentRelationships) {
         try {
-          Horse parentHorse = dao.getById(parentId);
+          Horse parentHorse = dao.getById(parentRel.parentId());
           Map<Long, OwnerDto> ownerMap = ownerMapForSingleId(parentHorse.ownerId());
           HorseListDto parentDto = mapper.entityToListDto(parentHorse, ownerMap != null ? ownerMap : Collections.emptyMap());
-          parentMap.put(parentId, parentDto);
+
+          String relationship = parentHorse.sex() == Sex.FEMALE ? "mother" : "father";
+          parentList.add(new ParentDto(parentDto, relationship));
         } catch (NotFoundException e) {
-          throw new FatalException("Parent horse %d not found".formatted(parentId));
+          throw new FatalException("Parent horse %d not found".formatted(parentRel.parentId()));
         }
       }
-      return parentMap;
+      return parentList;
     } catch (Exception e) {
       throw new FatalException("Error loading parent horses", e);
     }
   }
 
   @Override
+  public Stream<HorseListDto> searchParents(String name) {
+    LOG.trace("searchParents({})", name);
+
+    if (name == null || name.isBlank()) {
+      return Stream.empty();
+    }
+
+    var horses = dao.getAll();
+
+    // Get all owners first to handle owner name filtering
+    var allOwnerIds = horses.stream()
+        .map(Horse::ownerId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toUnmodifiableSet());
+    final Map<Long, OwnerDto> allOwnerMap;
+    try {
+      allOwnerMap = !allOwnerIds.isEmpty() ? ownerService.getAllById(allOwnerIds) : Map.of();
+    } catch (NotFoundException e) {
+      throw new FatalException("Horse, that is already persisted, refers to non-existing owner", e);
+    }
+
+    // Filter by name (case-insensitive partial match) and limit to 5 results
+    return horses.stream()
+        .filter(horse -> {
+          if (horse.name() == null) {
+            return false;
+          }
+          return horse.name().toLowerCase().contains(name.toLowerCase());
+        })
+        .limit(5)
+        .map(horse -> mapper.entityToListDto(horse, allOwnerMap));
+  }
+
+  @Override
   public void delete(long id) throws NotFoundException {
     LOG.trace("delete({})", id);
+
+    // Delete parent relationships first (both as child and as parent)
+    parentDao.deleteParentsByHorseId(id);
+    parentDao.deleteChildrenByParentId(id);
+
     dao.delete(id);
   }
 
