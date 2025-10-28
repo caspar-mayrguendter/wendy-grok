@@ -23,8 +23,7 @@ export interface HorseCreate {
   dateOfBirth: Date;
   sex: Sex;
   ownerId?: number;
-  motherId?: number;
-  fatherId?: number;
+  parentIds?: number[];
 }
 
 export interface HorseUpdate {
@@ -34,19 +33,21 @@ export interface HorseUpdate {
   dateOfBirth: Date;
   sex: Sex;
   ownerId?: number;
-  motherId?: number;
-  fatherId?: number;
+  parentIds?: number[];
 }
 
 export function convertFromHorseToCreate(horse: Horse): HorseCreate {
+  const parentIds: number[] = [];
+  if (horse.mother?.id) parentIds.push(horse.mother.id);
+  if (horse.father?.id) parentIds.push(horse.father.id);
+
   return {
     name: horse.name,
     description: horse.description,
     dateOfBirth: horse.dateOfBirth,
     sex: horse.sex,
     ownerId: horse.owner?.id,
-    motherId: horse.mother?.id,
-    fatherId: horse.father?.id,
+    parentIds: parentIds.length > 0 ? parentIds : undefined,
   };
 }
 
@@ -54,6 +55,11 @@ export function convertFromHorseToUpdate(horse: Horse): HorseUpdate {
   if (!horse.id) {
     throw new Error('Horse must have an ID for update');
   }
+
+  const parentIds: number[] = [];
+  if (horse.mother?.id) parentIds.push(horse.mother.id);
+  if (horse.father?.id) parentIds.push(horse.father.id);
+
   return {
     id: horse.id,
     name: horse.name,
@@ -61,8 +67,7 @@ export function convertFromHorseToUpdate(horse: Horse): HorseUpdate {
     dateOfBirth: horse.dateOfBirth,
     sex: horse.sex,
     ownerId: horse.owner?.id,
-    motherId: horse.mother?.id,
-    fatherId: horse.father?.id,
+    parentIds: parentIds.length > 0 ? parentIds : undefined,
   };
 }
 

@@ -1,10 +1,67 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { Horse, HorseCreate, HorseUpdate, HorseFamilyTree } from '../dto/horse';
+import { Sex } from '../dto/sex';
 
 const baseUri = environment.backendUrl + '/horses';
+
+// Backend request interfaces
+interface HorseCreateBackend {
+  name: string;
+  description?: string;
+  dateOfBirth: string;
+  sex: string;
+  ownerId?: number;
+  parentIds?: number[];
+}
+
+interface HorseUpdateBackend {
+  id: number;
+  name: string;
+  description?: string;
+  dateOfBirth: string;
+  sex: string;
+  ownerId?: number;
+  parentIds?: number[];
+}
+
+// Backend response interfaces
+interface HorseListBackend {
+  id: number;
+  name: string;
+  description?: string;
+  dateOfBirth: string;
+  sex: string;
+  owner?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  };
+}
+
+interface ParentBackend {
+  horse: HorseListBackend;
+  relationship: string;
+}
+
+interface HorseDetailBackend {
+  id: number;
+  name: string;
+  description?: string;
+  dateOfBirth: string;
+  sex: string;
+  owner?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  };
+  parents: ParentBackend[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -35,7 +92,9 @@ export class HorseService {
     const queryString = params.toString();
     const url = queryString ? `${baseUri}?${queryString}` : baseUri;
 
-    return this.http.get<Horse[]>(url);
+    return this.http.get<HorseListBackend[]>(url).pipe(
+      map(response => response.map(item => this.convertHorseListBackendToHorse(item)))
+    );
   }
 
   /**
@@ -61,7 +120,9 @@ export class HorseService {
     }
     params.set('limit', limit.toString());
 
-    return this.http.get<Horse[]>(`${baseUri}?${params.toString()}`);
+    return this.http.get<HorseListBackend[]>(`${baseUri}?${params.toString()}`).pipe(
+      map(response => response.map(item => this.convertHorseListBackendToHorse(item)))
+    );
   }
 
 
@@ -71,11 +132,21 @@ export class HorseService {
    * @param horse the data for the horse that should be created
    * @return an Observable for the created horse
    */
-  create(horse: HorseCreate
-  ): Observable<Horse> {
-    return this.http.post<Horse>(
+  create(horse: HorseCreate): Observable<Horse> {
+    const backendRequest: HorseCreateBackend = {
+      name: horse.name,
+      description: horse.description,
+      dateOfBirth: horse.dateOfBirth.toISOString().split('T')[0],
+      sex: horse.sex,
+      ownerId: horse.ownerId,
+      parentIds: horse.parentIds
+    };
+
+    return this.http.post<HorseDetailBackend>(
       baseUri,
-      horse
+      backendRequest
+    ).pipe(
+      map(response => this.convertHorseDetailBackendToHorse(response))
     );
   }
 
@@ -86,7 +157,9 @@ export class HorseService {
    * @return an Observable for the horse
    */
   getById(id: number): Observable<Horse> {
-    return this.http.get<Horse>(`${baseUri}/${id}`);
+    return this.http.get<HorseDetailBackend>(`${baseUri}/${id}`).pipe(
+      map(response => this.convertHorseDetailBackendToHorse(response))
+    );
   }
 
   /**
@@ -107,9 +180,21 @@ export class HorseService {
    * @return an Observable for the updated horse
    */
   update(horse: HorseUpdate): Observable<Horse> {
-    return this.http.put<Horse>(
+    const backendRequest: HorseUpdateBackend = {
+      id: horse.id,
+      name: horse.name,
+      description: horse.description,
+      dateOfBirth: horse.dateOfBirth.toISOString().split('T')[0],
+      sex: horse.sex,
+      ownerId: horse.ownerId,
+      parentIds: horse.parentIds
+    };
+
+    return this.http.put<HorseDetailBackend>(
       `${baseUri}/${horse.id}`,
-      horse
+      backendRequest
+    ).pipe(
+      map(response => this.convertHorseDetailBackendToHorse(response))
     );
   }
 
@@ -121,6 +206,78 @@ export class HorseService {
    */
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${baseUri}/${id}`);
+  }
+
+  /**
+   * Convert backend HorseListBackend to frontend Horse format
+   */
+  private convertHorseListBackendToHorse(backend: HorseListBackend): Horse {
+    return {
+      id: backend.id,
+      name: backend.name,
+      description: backend.description,
+      dateOfBirth: new Date(backend.dateOfBirth),
+      sex: backend.sex === 'FEMALE' ? Sex.female : Sex.male,
+      owner: backend.owner ? {
+        id: backend.owner.id,
+        firstName: backend.owner.firstName,
+        lastName: backend.owner.lastName,
+        email: backend.owner.email
+      } : undefined,
+      mother: undefined,
+      father: undefined
+    };
+  }
+
+  /**
+   * Convert backend HorseDetailBackend to frontend Horse format
+   */
+  private convertHorseDetailBackendToHorse(backend: HorseDetailBackend): Horse {
+    // Find mother and father from parents array
+    let mother: Horse | undefined;
+    let father: Horse | undefined;
+
+    if (backend.parents) {
+      for (const parent of backend.parents) {
+        const parentHorse: Horse = {
+          id: parent.horse.id,
+          name: parent.horse.name,
+          description: parent.horse.description,
+          dateOfBirth: new Date(parent.horse.dateOfBirth),
+          sex: parent.horse.sex === 'FEMALE' ? Sex.female : Sex.male,
+          owner: parent.horse.owner ? {
+            id: parent.horse.owner.id,
+            firstName: parent.horse.owner.firstName,
+            lastName: parent.horse.owner.lastName,
+            email: parent.horse.owner.email
+          } : undefined,
+          mother: undefined,
+          father: undefined
+        };
+
+        if (parent.relationship === 'mother') {
+          mother = parentHorse;
+        } else if (parent.relationship === 'father') {
+          father = parentHorse;
+        }
+      }
+    }
+
+    return {
+      id: backend.id,
+      name: backend.name,
+      description: backend.description,
+      dateOfBirth: new Date(backend.dateOfBirth),
+      sex: backend.sex === 'FEMALE' ? Sex.female : Sex.male,
+      owner: backend.owner ? {
+        id: backend.owner.id,
+        firstName: backend.owner.firstName,
+        lastName: backend.owner.lastName,
+        email: backend.owner.email
+      } : undefined,
+      mother: mother,
+      father: father
+    };
   }
 
 }
