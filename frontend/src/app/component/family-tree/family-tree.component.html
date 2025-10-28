@@ -45,3 +45,10 @@
     </div>
   </div>
 }
+
+<app-confirm-delete-dialog
+  id="delete-dialog"
+  [hidden]="!horseForDeletion"
+  [deleteWhat]="horseForDeletion?.name"
+  (confirm)="confirmDeleteHorse(horseForDeletion)">
+</app-confirm-delete-dialog>

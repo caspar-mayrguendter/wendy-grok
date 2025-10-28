@@ -7,6 +7,7 @@ import { Sex } from 'src/app/dto/sex';
 import { TreeNodeComponent } from '../tree-node/tree-node.component';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ConfirmDeleteDialogComponent } from '../confirm-delete-dialog/confirm-delete-dialog.component';
 
 export interface TreeNode {
   horse: Horse;
@@ -22,7 +23,8 @@ export interface TreeNode {
   imports: [
     TreeNodeComponent,
     FormsModule,
-    CommonModule
+    CommonModule,
+    ConfirmDeleteDialogComponent
   ]
 })
 export class FamilyTreeComponent implements OnInit {
@@ -134,10 +136,18 @@ export class FamilyTreeComponent implements OnInit {
   }
 
   deleteHorse(horse: Horse): void {
+    // This method is called when the delete button is clicked
+    // It sets the horse for deletion (confirmation will be handled by the dialog)
+    this.horseForDeletion = horse;
+  }
+
+  confirmDeleteHorse(horse: Horse | undefined): void {
     if (horse && horse.id) {
       this.horseService.delete(horse.id).subscribe({
         next: () => {
           this.notification.success(`Horse ${horse.name} successfully deleted.`);
+          // Clear the horse for deletion
+          this.horseForDeletion = undefined;
           // Refresh the tree by reloading the family tree
           if (this.rootHorseId) {
             this.loadFamilyTree(this.rootHorseId);
@@ -146,6 +156,8 @@ export class FamilyTreeComponent implements OnInit {
         error: error => {
           console.error('Error deleting horse', error);
           this.notification.error('Could not delete horse', 'Error');
+          // Clear the horse for deletion on error
+          this.horseForDeletion = undefined;
         }
       });
     }
