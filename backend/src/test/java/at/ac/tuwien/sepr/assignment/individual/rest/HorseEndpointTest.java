@@ -65,7 +65,7 @@ public class HorseEndpointTest {
     assertThat(horseResult.size()).isGreaterThanOrEqualTo(1); // TODO: Adapt this to the exact number in the test data later
     assertThat(horseResult)
         .extracting(HorseListDto::id, HorseListDto::name)
-        .contains(tuple(-1L, "Wendy"));
+        .contains(tuple(2001L, "Wendy"));
   }
 
   /**

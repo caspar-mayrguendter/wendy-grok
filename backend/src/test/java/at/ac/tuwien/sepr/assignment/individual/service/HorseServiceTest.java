@@ -40,7 +40,7 @@ public class HorseServiceTest {
 
     assertThat(horses)
         .map(HorseListDto::id, HorseListDto::sex)
-        .contains(tuple(-1L, Sex.FEMALE));
+        .contains(tuple(2001L, Sex.FEMALE));
   }
 
   /**

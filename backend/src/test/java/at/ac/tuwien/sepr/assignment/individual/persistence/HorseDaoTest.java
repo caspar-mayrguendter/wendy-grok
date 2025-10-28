@@ -34,7 +34,7 @@ public class HorseDaoTest {
     assertThat(horses.size()).isGreaterThanOrEqualTo(1); // TODO adapt to exact number of elements in test data later
     assertThat(horses)
         .extracting(Horse::id, Horse::name)
-        .contains(tuple(-1L, "Wendy"));
+        .contains(tuple(2001L, "Wendy"));
   }
 
   /**
