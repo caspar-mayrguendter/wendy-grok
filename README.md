@@ -2,9 +2,9 @@
 
 ## Personal Information
 
-| Matriculation Number |
-|----------------------|
-| 32101826             |
+| Name           | Matriculation Number |
+|----------------|----------------------|
+| Ariana Lorencz       | 32101826              |
 
 ---
 
