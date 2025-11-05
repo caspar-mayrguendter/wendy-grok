@@ -1,0 +1,9 @@
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc
+
+/.idea/
+
+.DS_Store
+backend/.DS_Store
